@@ -9,6 +9,7 @@ import ProblemCard from "./components/ProblemCard";
 import AnswerButtons from "./components/AnswerButtons";
 import TimerCircle from "./components/TimerCircle";
 import Leaderboard from "./components/Leaderboard";
+import DefaultAvatar from "./assets/default-avatar.png";
 
 const ROUND_TIME = 40;
 const API_BASE = "https://momis.studio/api";
@@ -259,6 +260,15 @@ function App() {
         }
     }, [startLocalTimer, isAuthenticated, token]);
 
+
+    const handleImageError = useCallback((e) => {
+      if (e.target.src !== DefaultAvatar) {
+        e.target.src = DefaultAvatar;
+      }
+      e.target.onerror = null;
+    }, []);
+
+
     useEffect(() => {
         const initAuth = async () => {
             if (token && userData) {
@@ -328,17 +338,10 @@ function App() {
                     <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl w-full">
                         {userData.photo_url && (
                             <img
-                                src={userData.photo_url}
+                                src={userData.photo_url || DefaultAvatar}
                                 alt="Profile"
                                 className="w-12 h-12 rounded-full"
-                                onError={(e) => {
-                                    console.error(
-                                        "Failed to load profile image",
-                                        e
-                                    );
-                                    e.target.src =
-                                        "https://via.placeholder.com/100";
-                                }}
+                                onError={handleImageError}
                             />
                         )}
                         <div>
@@ -386,17 +389,10 @@ function App() {
                     {userData && (
                         <div className="flex items-center gap-2">
                             <img
-                                src={userData.photo_url}
+                                src={userData.photo_url || DefaultAvatar}
                                 alt="Profile"
                                 className="w-12 h-12 rounded-full"
-                                onError={(e) => {
-                                    console.error(
-                                        "Failed to load profile image",
-                                        e
-                                    );
-                                    e.target.src =
-                                        "https://via.placeholder.com/100";
-                                }}
+                                onError={handleImageError}
                             />
                             <span>{userData.first_name}</span>
                         </div>
