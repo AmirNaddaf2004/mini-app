@@ -4,12 +4,10 @@ import AnswerButtons from "./components/AnswerButtons";
 import TimerCircle from "./components/TimerCircle";
 import Leaderboard from "./components/Leaderboard";
 
-// ثابت‌های برنامه
 const ROUND_TIME = 40;
-const API_BASE = '/api';
+const API_BASE = 'https://momis.studio/api';
 
 function App() {
-  // State مدیریت
   const [problem, setProblem] = useState(null);
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
   const [loading, setLoading] = useState(false);
@@ -27,11 +25,9 @@ function App() {
   });
   const [gameActive, setGameActive] = useState(false);
 
-  // Refs برای تایمرها
   const timerId = useRef(null);
   const abortControllerRef = useRef(null);
 
-  // پاک‌سازی تایمرها و درخواست‌ها
   const clearResources = useCallback(() => {
     if (timerId.current) clearInterval(timerId.current);
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -40,7 +36,6 @@ function App() {
     abortControllerRef.current = null;
   }, []);
 
-  // مدیریت پایان بازی
   const handleGameOver = useCallback((finalScore) => {
     clearResources();
     setProblem(null);
@@ -50,13 +45,11 @@ function App() {
     setGameActive(false);
   }, [clearResources]);
 
-  // تابع احراز هویت کاربر
   const authenticateUser = useCallback(async () => {
     try {
       setAuthLoading(true);
       setError(null);
 
-      // در محیط توسعه، احراز هویت را رد می‌کنیم
       if (!window.Telegram?.WebApp) {
         console.log("Running in non-Telegram environment, skipping authentication");
         setIsAuthenticated(true);
@@ -69,7 +62,6 @@ function App() {
         throw new Error('Telegram authentication data not found');
       }
 
-      // ارسال درخواست به سرور
       const response = await fetch(`${API_BASE}/telegram-auth`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -87,7 +79,6 @@ function App() {
         throw new Error(data?.message || 'Invalid Telegram user');
       } 
 
-      // ذخیره توکن و اطلاعات کاربر
       setToken(data.token);
       setUserData(data.user);
       localStorage.setItem("jwtToken", data.token);
@@ -104,7 +95,6 @@ function App() {
     }
   }, []);
 
-  // ارسال پاسخ به سرور
   const submitAnswer = useCallback(async (answer) => {
     if (!problem || loading || !token) return;
     
@@ -142,7 +132,6 @@ function App() {
         console.error("Answer error:", err);
         setError(err.message || "Failed to submit answer");
         
-        // اگر خطای احراز هویت بود، به صفحه لاگین برگرد
         if (err.message.includes("token") || err.message.includes("Unauthorized")) {
           setIsAuthenticated(false);
           setView("auth");
@@ -155,12 +144,10 @@ function App() {
     }
   }, [problem, loading, handleGameOver, token]);
 
-  // مدیریت زمان تمام شده
   const handleTimeout = useCallback(async () => {
     await submitAnswer(false);
   }, [submitAnswer]);
 
-  // شروع تایمر محلی
   const startLocalTimer = useCallback((initialTime) => {
     clearResources();
     setTimeLeft(initialTime);
@@ -176,7 +163,6 @@ function App() {
     }, 1000);
   }, [clearResources, handleTimeout]);
 
-  // شروع بازی جدید
   const startGame = useCallback(async () => {
     if (!isAuthenticated || !token) {
       setError('Please authenticate first');
@@ -234,7 +220,6 @@ function App() {
       );
       setGameActive(false);
       
-      // اگر خطای احراز هویت بود، به صفحه لاگین برگرد
       if (err.message.includes("token") || err.message.includes("Unauthorized")) {
         setIsAuthenticated(false);
         setView("auth");
@@ -249,10 +234,8 @@ function App() {
     }
   }, [startLocalTimer, isAuthenticated, token]);
 
-  // Effects مدیریت
   useEffect(() => {
     const initAuth = async () => {
-      // اگر توکن ذخیره شده داریم، مستقیماً به صفحه اصلی برو
       if (token && userData) {
         setIsAuthenticated(true);
         setView("home");
@@ -273,7 +256,6 @@ function App() {
     }
   }, [error]);
 
-  // خروج از حساب کاربری
   const handleLogout = useCallback(() => {
     localStorage.removeItem("jwtToken");
     localStorage.removeItem("userData");
@@ -283,7 +265,6 @@ function App() {
     setView("auth");
   }, []);
 
-  // محتوای صفحه احراز هویت
   const authContent = useMemo(() => {
     if (view !== "auth") return null;
 
@@ -311,7 +292,6 @@ function App() {
     );
   }, [view, authLoading, error, authenticateUser]);
 
-  // محتوای صفحه اصلی
   const homeContent = useMemo(() => {
     if (view !== "home") return null;
 
