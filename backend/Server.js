@@ -192,7 +192,7 @@ class MathGame {
                     firstName: jwtPayload.firstName,
                     lastName: jwtPayload.lastName,
                     username: jwtPayload.username,
-                    userImage: jwtPayload.userImage,
+                    photo_url: jwtPayload.photo_url,
                 }
             };
         } catch (e) {
@@ -311,7 +311,7 @@ app.post("/api/telegram-auth", (req, res) => {
                 firstName: userData.first_name,
                 lastName: userData.last_name,
                 username: userData.username,
-                userImage: userData.photo_url,
+                photo_url: userData.photo_url,
             },
             process.env.JWT_SECRET,
             { expiresIn: "1d" } // انقضا توکن
@@ -358,7 +358,7 @@ app.post("/api/start", authenticateToken, async (req, res) => {
             firstName: user.firstName,
             lastName: user.lastName,
             username: user.username,
-            userImage: user.userImage,
+            photo_url: user.photo_url,
         });
 
         res.json(result);
@@ -419,7 +419,7 @@ app.get("/api/leaderboard", (req, res) => {
                 score: player.top_score,
                 username: player.jwtPayload.username,
                 first_name: player.jwtPayload.firstName,
-                user_image: player.jwtPayload.userImage,
+                photo_url: player.jwtPayload.photo_url,
             }))
             .sort((a, b) => b.score - a.score);
 
