@@ -1,25 +1,37 @@
-
 import { validate } from "@tma.js/init-data-node";
 
 export default function validateTelegramData(rawInitData, botToken) {
   try {
-    console.log("polllllll");
-    validate(rawInitData, botToken); // پارامتر اول باید رشته خام باشد
+    // اعتبارسنجی داده‌ها
+    validate(rawInitData, botToken);
 
-    // 2. استخراج اطلاعات کاربر
+    // استخراج پارامترها
     const initData = new URLSearchParams(rawInitData);
     const userJson = initData.get('user');
+    
+    if (!userJson) {
+      throw new Error('User data not found in initData');
+    }
 
-    // 3. تبدیل رشته JSON به شیء JavaScript
+    // تبدیل به شیء
     const userData = JSON.parse(userJson);
 
-    console.log(userData);
-
-
-    // 4. بازگرداندن شیء کاربر
-    return  userData;
+    // استخراج و بازگرداندن تمام فیلدهای ضروری
+    return {
+      id: userData.id,
+      first_name: userData.first_name,
+      last_name: userData.last_name || '',
+      username: userData.username || '',
+      language_code: userData.language_code || '',
+      allows_write_to_pm: userData.allows_write_to_pm || false,
+      photo_url: userData.photo_url || null // این خط حیاتی است
+    };
+    
   } catch (error) {
-    console.error('Telegram data validation failed:', error);
-    throw new Error('Authentication failed: Invalid Telegram data');
+    console.error('Telegram data validation failed:', {
+      error: error.message,
+      rawInitData: rawInitData.substring(0, 50) + '...'
+    });
+    throw new Error('Authentication failed: ' + error.message);
   }
 }
