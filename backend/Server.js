@@ -7,7 +7,6 @@ const mathEngine = require("./math_engine.js");
 const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
 
-// تنظیمات پایه
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -18,7 +17,6 @@ const allowedOrigins = [
     "https://web.telegram.org"
 ];
 
-// Middleware برای CORS
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", allowedOrigins);
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -36,7 +34,6 @@ const corsOptions = {
 app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 
-// بهبود سیستم لاگینگ
 const logger = {
     info: (message) =>
         console.log(`[INFO] ${new Date().toISOString()} - ${message}`),
@@ -140,21 +137,18 @@ class MathGame {
                 throw new Error("User ID is missing in JWT payload");
             }
 
-            // یافتن بازیکن موجود بر اساس userId
             let playerId = this.userToPlayerMap[userId];
             let isNewPlayer = false;
 
             if (playerId && this.players[playerId]) {
                 const player = this.players[playerId];
                 
-                // به روزرسانی اطلاعات کاربر
                 player.jwtPayload = jwtPayload;
 
                 if (player.timer) {
                     clearTimeout(player.timer);
                 }
             } else {
-                // ایجاد بازیکن جدید
                 playerId = uuidv4();
                 this.players[playerId] = new Player(playerId, jwtPayload);
                 this.userToPlayerMap[userId] = playerId;
@@ -163,7 +157,6 @@ class MathGame {
 
             const player = this.players[playerId];
 
-            // تنظیمات اولیه بازی
             player.game_active = true;
             player.time_left = this.total_time;
             player.score = 0;
@@ -175,12 +168,10 @@ class MathGame {
             player.should_stop = false;
             player.last_activity = new Date();
 
-            // تولید مسئله جدید
             const { problem, is_correct } = mathEngine.generate();
             player.current_problem = problem;
             player.current_answer = is_correct;
 
-            // شروع تایمر
             this.runTimer(playerId);
 
             logger.info(`Game started for user ${userId}`, {
@@ -279,7 +270,6 @@ class MathGame {
 
 const gameInstance = new MathGame();
 
-// Middleware احراز هویت با JWT
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
@@ -299,12 +289,9 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Route برای سرویس دهی فایل‌های استاتیک
 app.use(express.static(path.join(__dirname, "../frontend/build")));
 
 // API Routes
-
-// اعتبارسنجی داده‌های تلگرام و تولید JWT
 app.post("/api/telegram-auth", (req, res) => {
     try {
         const { initData } = req.body;
@@ -316,10 +303,8 @@ app.post("/api/telegram-auth", (req, res) => {
             });
         }
 
-        // اعتبارسنجی داده‌های تلگرام
         const userData = validateTelegramData(initData, process.env.BOT_TOKEN);
 
-        // ساخت JWT
         const token = jwt.sign(
             {
                 userId: userData.id,
@@ -332,7 +317,6 @@ app.post("/api/telegram-auth", (req, res) => {
             { expiresIn: "1d" } // انقضا توکن
         );
 
-        // لاگ موفقیت آمیز (بدون اطلاعات حساس)
         logger.info(
             `Telegram authentication successful for user: ${userData.id}`
         );
@@ -363,7 +347,6 @@ app.post("/api/telegram-auth", (req, res) => {
     }
 });
 
-// شروع بازی با احراز هویت JWT
 app.post("/api/start", authenticateToken, async (req, res) => {
     try {
         const user = req.user; // اطلاعات کاربر از توکن
@@ -394,7 +377,6 @@ app.post("/api/start", authenticateToken, async (req, res) => {
     }
 });
 
-// ارسال پاسخ با احراز هویت JWT
 app.post("/api/answer", authenticateToken, (req, res) => {
     try {
         const { answer } = req.body;
@@ -425,13 +407,11 @@ app.post("/api/answer", authenticateToken, (req, res) => {
     }
 });
 
-// لیست برترین‌ها
 app.get("/api/leaderboard", (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
 
-        // تبدیل بازیکنان به آرایه و مرتب‌سازی
         const allPlayers = Object.values(gameInstance.players)
             .filter(player => player.jwtPayload) // فقط بازیکنان احراز شده
             .map((player) => ({
@@ -471,12 +451,10 @@ app.get("/api/leaderboard", (req, res) => {
     }
 });
 
-// Route اصلی برای فرانت‌اند
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
 });
 
-// پورت از متغیر محیطی استفاده می‌کند
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
