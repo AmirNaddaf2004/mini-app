@@ -415,11 +415,13 @@ app.get("/api/leaderboard", (req, res) => {
         const allPlayers = Object.values(gameInstance.players)
             .filter(player => player.jwtPayload) // فقط بازیکنان احراز شده
             .map((player) => ({
+                id: player.jwtPayload.userId, 
                 player_id: player.id,
                 score: player.top_score,
                 username: player.jwtPayload.username,
                 first_name: player.jwtPayload.firstName,
                 photo_url: player.jwtPayload.photo_url,
+                
             }))
             .sort((a, b) => b.score - a.score);
 
