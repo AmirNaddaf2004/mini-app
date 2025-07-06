@@ -46,7 +46,7 @@ export default function Leaderboard({ API_BASE, onReplay, finalScore, userData }
       </div>
     );
   }
-  
+
   console.log("اطلاعات کاربر لاگین کرده (userData):", userData);
   console.log("اطلاعات ردیف اول لیدربورد (rows[0]):", rows[0]);
 
@@ -61,7 +61,7 @@ export default function Leaderboard({ API_BASE, onReplay, finalScore, userData }
         {/* ---------- Header row ---------- */}
         <li className="flex justify-between py-2 px-3 font-semibold text-slate-600 mb-1">
           <span>Rank</span>
-          <span className="flex-1 text-center">Player&nbsp;ID</span>
+          <span className="flex-1 text-center">Player&nbsp;name</span>
           <span>Score</span>
         </li>
 
@@ -71,11 +71,11 @@ export default function Leaderboard({ API_BASE, onReplay, finalScore, userData }
             <li
               key={r.player_id}
               className={`flex justify-between py-2 px-3 rounded-xl ${
-                r.telegramUser?.id === userData?.user_id ? "bg-indigo-200" : ""
+                r.id === userData?.id ? "bg-indigo-200" : ""
             }`}            >
               <span>{i + 1}</span>
               <span className="flex-1 text-center truncate">
-                {r.telegramUser?.username || `Player ${r.player_id.slice(0, 6)}`}
+                {r.telegramUser?.username || `${r.username}`}
               </span>
               <span className="font-bold text-indigo-600">{r.score}</span>
             </li>
