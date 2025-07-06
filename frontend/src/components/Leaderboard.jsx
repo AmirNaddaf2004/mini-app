@@ -47,6 +47,9 @@ export default function Leaderboard({ API_BASE, onReplay, finalScore, userData }
     );
   }
   
+  console.log("اطلاعات کاربر لاگین کرده (userData):", userData);
+  console.log("اطلاعات ردیف اول لیدربورد (rows[0]):", rows[0]);
+
   return (
     <div className="w-full max-w-md mx-auto bg-white/80 backdrop-blur p-6 rounded-3xl shadow-xl">
       {banner}
