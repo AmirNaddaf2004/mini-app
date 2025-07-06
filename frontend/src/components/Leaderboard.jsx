@@ -68,7 +68,7 @@ export default function Leaderboard({ API_BASE, onReplay, finalScore, userData }
             <li
               key={r.player_id}
               className={`flex justify-between py-2 px-3 rounded-xl ${
-                r.player_id === userData?.user_id ? "bg-indigo-200" : ""
+                r.telegramUser?.id === userData?.user_id ? "bg-indigo-200" : ""
             }`}            >
               <span>{i + 1}</span>
               <span className="flex-1 text-center truncate">
