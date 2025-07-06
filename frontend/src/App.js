@@ -260,14 +260,12 @@ function App() {
         }
     }, [startLocalTimer, isAuthenticated, token]);
 
-
     const handleImageError = useCallback((e) => {
-      if (e.target.src !== DefaultAvatar) {
-        e.target.src = DefaultAvatar;
-      }
-      e.target.onerror = null;
+        if (e.target.src !== DefaultAvatar) {
+            e.target.src = DefaultAvatar;
+        }
+        e.target.onerror = null;
     }, []);
-
 
     useEffect(() => {
         const initAuth = async () => {
@@ -336,14 +334,12 @@ function App() {
             <div className="flex flex-col items-center gap-6 w-full max-w-md">
                 {userData && (
                     <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl w-full">
-                        {userData.photo_url && (
-                            <img
-                                src={userData.photo_url || DefaultAvatar}
-                                alt="Profile"
-                                className="w-12 h-12 rounded-full"
-                                onError={handleImageError}
-                            />
-                        )}
+                        <img
+                            src={userData.photo_url || DefaultAvatar}
+                            alt="Profile"
+                            className="w-12 h-12 rounded-full"
+                            onError={handleImageError}
+                        />
                         <div>
                             <h2 className="font-bold text-lg">
                                 {userData.first_name} {userData.last_name}
