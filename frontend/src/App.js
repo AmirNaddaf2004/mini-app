@@ -378,6 +378,9 @@ function App() {
     const gameContent = useMemo(() => {
         if (view !== "game") return null;
 
+        
+    
+
         return problem ? (
             <div className="flex flex-col items-center gap-6 w-full max-w-md">
                 <div className="flex justify-between w-full">
