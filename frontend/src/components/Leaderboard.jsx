@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export default function Leaderboard({ API_BASE, onReplay, finalScore }) {
+export default function Leaderboard({ API_BASE, onReplay, finalScore, userData }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,8 +67,9 @@ export default function Leaderboard({ API_BASE, onReplay, finalScore }) {
           rows.map((r, i) => (
             <li
               key={r.player_id}
-              className="flex justify-between py-2 px-3 odd:bg-indigo-50 rounded-xl"
-            >
+              className={`flex justify-between py-2 px-3 rounded-xl ${
+                r.player_id === userData?.user_id ? "bg-indigo-200" : ""
+            }`}            >
               <span>{i + 1}</span>
               <span className="flex-1 text-center truncate">
                 {r.telegramUser?.username || `Player ${r.player_id.slice(0, 6)}`}

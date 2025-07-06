@@ -2,7 +2,7 @@ import React, {
     useState,
     useEffect,
     useCallback,
-    useRef,
+    useRef,leaderboardContent
     useMemo,
 } from "react";
 import ProblemCard from "./components/ProblemCard";
@@ -378,9 +378,6 @@ function App() {
     const gameContent = useMemo(() => {
         if (view !== "game") return null;
 
-        
-    
-
         return problem ? (
             <div className="flex flex-col items-center gap-6 w-full max-w-md">
                 <div className="flex justify-between w-full">
@@ -437,9 +434,10 @@ function App() {
                     onReplay={startGame}
                     finalScore={finalScore}
                     onHome={() => setView("home")}
+                    userData={userData} 
                 />
             ),
-        [view, leaderboardKey, startGame, finalScore]
+        [view, leaderboardKey, startGame, finalScore, userData]
     );
 
     return (
