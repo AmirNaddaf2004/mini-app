@@ -1,3 +1,9 @@
+<!-- RUN ON SERVER FROM GITHUB -->
+root@DESKTOP-AGHA-MOSTAFA:~# ssh mostafa@65.109.186.25
+mostafa@ubuntu-4gb-hel1-4:~$ cd ../../var/www/mini-app/
+
+
+<!-- LOCAL RUN -->
 0: dont firget this:
 D:\GitHub\mini-app\backend\.env :
 PORT=10000
