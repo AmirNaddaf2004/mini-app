@@ -199,7 +199,7 @@ class MathGame {
         }
     }
 
-    async checkAnswer(userId, userAnswer) { // این متد باید async شود
+    async checkAnswer(userId, userAnswer) { // این متد باید async بماند
         try {
             const playerId = this.userToPlayerMap[userId];
             if (!playerId || !this.players[playerId]) {
@@ -210,61 +210,63 @@ class MathGame {
             player.last_activity = new Date();
 
             if (!player.game_active) {
-                return { status: "game_over", final_score: player.score };
+                return { status: "game_over", final_score: player.score, top_score: player.top_score };
             }
-            
+
             const is_correct = userAnswer === player.current_answer;
 
             if (is_correct) {
+                // منطق اصلی شما: جایزه زمانی برای پاسخ صحیح
                 player.time_left = Math.min(40, player.time_left + 5);
                 player.score += 1;
             } else {
+                // منطق اصلی شما: جریمه زمانی برای پاسخ غلط
                 player.time_left = Math.max(0, player.time_left - 10);
             }
-            
-            let finalResult = null;
 
-            if (player.time_left <= 0 || !is_correct) {
+            // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
+            if (player.time_left <= 0) {
                 player.game_active = false;
                 
-                // بازی تمام شد! امتیاز نهایی را در دیتابیس ثبت کن
+                // حالا که بازی تمام شده، امتیاز نهایی را در دیتابیس ثبت می‌کنیم
                 if (player.score > 0) {
                     await Score.create({
                         score: player.score,
                         userTelegramId: userId
                     });
-                    logger.info(`Saved score ${player.score} for user ${userId}`);
+                    logger.info(`Saved final score ${player.score} for user ${userId}`);
                 }
+                
+                // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
+                player.top_score = Math.max(player.top_score, player.score);
 
-                finalResult = {
+                return {
                     status: "game_over",
                     final_score: player.score,
-                    top_score: Math.max(player.top_score, player.score)
+                    top_score: player.top_score
                 };
             }
-            
-            if (player.game_active) {
-                const { problem, is_correct: answer } = mathEngine.generate();
-                player.current_problem = problem;
-                player.current_answer = answer;
 
-                finalResult = {
-                    status: "continue",
-                    problem: problem,
-                    time_left: player.time_left,
-                    score: player.score,
-                    feedback: is_correct ? "correct" : "wrong",
-                    game_active: true,
-                };
-            }
-            
-            return finalResult;
+            // اگر بازی ادامه دارد، یک سوال جدید تولید کن
+            const { problem, is_correct: answer } = mathEngine.generate();
+            player.current_problem = problem;
+            player.current_answer = answer;
+
+            return {
+                status: "continue",
+                problem: problem,
+                time_left: player.time_left,
+                score: player.score,
+                feedback: is_correct ? "correct" : "wrong",
+                game_active: true,
+            };
 
         } catch (e) {
             logger.error(`Check answer error: ${e.message}`);
             return { status: "error", message: e.message };
         }
     }
+    
 }
 
 const gameInstance = new MathGame();
