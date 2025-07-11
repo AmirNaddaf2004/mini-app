@@ -413,40 +413,69 @@ app.get("/api/leaderboard", async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
 
-        const { count, rows: leaderboard } = await User.findAndCountAll({
+        // مرحله ۱: بالاترین امتیاز را برای هر کاربر پیدا کن
+        const topScores = await Score.findAll({
             attributes: [
-                'telegramId', 
-                'username', 
-                'firstName',
-                'photo_url',
-                [sequelize.fn('MAX', sequelize.col('Scores.score')), 'top_score']
+                'userTelegramId',
+                [sequelize.fn('MAX', sequelize.col('score')), 'max_score']
             ],
-            include: [{
-                model: Score,
-                required: true, // مهم: فقط کاربرانی که حداقل یک امتیاز دارند را نشان بده
-                attributes: []
-            }],
-            // --- شروع تغییر کلیدی ---
-            group: ['User.telegramId', 'User.username', 'User.firstName', 'User.photo_url'],
-            // --- پایان تغییر کلیدی ---
-            order: [[sequelize.literal('top_score'), 'DESC']], // مرتب‌سازی بر اساس نام مستعار ستون
+            group: ['userTelegramId'],
+            order: [[sequelize.fn('MAX', sequelize.col('score')), 'DESC']],
             limit: limit,
             offset: offset,
-            subQuery: false
+            raw: true // نتیجه را به صورت یک آرایه ساده برمی‌گرداند
+        });
+
+        if (topScores.length === 0) {
+            return res.json({
+                status: "success",
+                leaderboard: [],
+                meta: { total: 0, limit, offset, has_more: false },
+            });
+        }
+        
+        const userIds = topScores.map(s => s.userTelegramId);
+
+        // مرحله ۲: اطلاعات کامل کاربران برنده را بر اساس ID هایی که پیدا کردیم، واکشی کن
+        const users = await User.findAll({
+            where: {
+                telegramId: userIds
+            },
+            raw: true
+        });
+
+        // یک مپ برای دسترسی سریع به اطلاعات هر کاربر بساز
+        const userMap = users.reduce((map, user) => {
+            map[user.telegramId] = user;
+            return map;
+        }, {});
+        
+        // مرحله ۳: نتایج دو مرحله را با هم ترکیب کن تا لیدربرد نهایی ساخته شود
+        const leaderboard = topScores.map(scoreEntry => {
+            const user = userMap[scoreEntry.userTelegramId];
+            return {
+                telegramId: user.telegramId,
+                username: user.username,
+                firstName: user.firstName,
+                photo_url: user.photo_url,
+                top_score: scoreEntry.max_score
+            };
         });
         
-        const total = count.length;
+        // شمارش کل بازیکنان دارای امتیاز برای صفحه‌بندی (Pagination)
+        const totalCount = await Score.count({ distinct: true, col: 'userTelegramId' });
 
         res.json({
             status: "success",
             leaderboard,
             meta: {
-                total,
+                total: totalCount,
                 limit,
                 offset,
-                has_more: offset + limit < total,
+                has_more: offset + limit < totalCount,
             },
         });
+        
     } catch (e) {
         logger.error(`Leaderboard error: ${e.message}`, { stack: e.stack });
         res.status(500).json({ status: "error", message: "Internal server error" });
