@@ -1,11 +1,13 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { v4: uuidv4 } = require("uuid");
+// const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const mathEngine = require("./math_engine.js");
 const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
+
+const { User, Score, sequelize } = require("./DataBase/models");
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -130,41 +132,44 @@ class MathGame {
         player.timer = setTimeout(tick, 1000);
     }
 
-    startGame(jwtPayload) {
+    async startGame(jwtPayload) { // این متد باید async شود
         try {
             const userId = jwtPayload?.userId;
             if (!userId) {
                 throw new Error("User ID is missing in JWT payload");
             }
 
-            let playerId = this.userToPlayerMap[userId];
-            let isNewPlayer = false;
+            // ۱. کاربر را در دیتابیس پیدا یا ایجاد کن
+            const [user, created] = await User.findOrCreate({
+                where: { telegramId: userId },
+                defaults: {
+                    firstName: jwtPayload.firstName,
+                    lastName: jwtPayload.lastName,
+                    username: jwtPayload.username,
+                    photo_url: jwtPayload.photo_url,
+                },
+            });
 
-            if (playerId && this.players[playerId]) {
-                const player = this.players[playerId];
-                
-                player.jwtPayload = jwtPayload;
+            // ۲. بالاترین امتیاز قبلی کاربر را از دیتابیس بخوان
+            const topScoreResult = await Score.findOne({
+                where: { userTelegramId: userId },
+                attributes: [[sequelize.fn('max', sequelize.col('score')), 'top_score']],
+                raw: true,
+            });
+            const top_score = topScoreResult.top_score || 0;
 
-                if (player.timer) {
-                    clearTimeout(player.timer);
-                }
-            } else {
-                playerId = uuidv4();
-                this.players[playerId] = new Player(playerId, jwtPayload);
-                this.userToPlayerMap[userId] = playerId;
-                isNewPlayer = true;
-            }
-
+            // ۳. یک شناسه بازیکن برای بازی فعلی بساز (در حافظه)
+            const playerId = userId; // می‌توانیم از همان آیدی تلگرام استفاده کنیم
+            this.players[playerId] = new Player(playerId, jwtPayload);
+            this.userToPlayerMap[userId] = playerId;
+            
             const player = this.players[playerId];
-
+            
+            // ۴. مقداردهی اولیه بازیکن با اطلاعات دیتابیس و شروع بازی
             player.game_active = true;
             player.time_left = this.total_time;
             player.score = 0;
-
-            if (isNewPlayer) {
-                player.top_score = 0;
-            }
-
+            player.top_score = top_score; // بالاترین امتیاز از دیتابیس خوانده شد
             player.should_stop = false;
             player.last_activity = new Date();
 
@@ -173,11 +178,7 @@ class MathGame {
             player.current_answer = is_correct;
 
             this.runTimer(playerId);
-
-            logger.info(`Game started for user ${userId}`, {
-                playerId,
-                isNewPlayer
-            });
+            logger.info(`Game started for user ${userId}`);
 
             return {
                 status: "success",
@@ -185,85 +186,83 @@ class MathGame {
                 problem: problem,
                 time_left: player.time_left,
                 score: player.score,
+                top_score: player.top_score, // ارسال بالاترین امتیاز به فرانت‌اند
                 game_active: true,
-                is_new_player: isNewPlayer,
-                user: {
-                    userId: jwtPayload.userId,
-                    firstName: jwtPayload.firstName,
-                    lastName: jwtPayload.lastName,
-                    username: jwtPayload.username,
-                    photo_url: jwtPayload.photo_url,
-                }
+                user: user.toJSON()
             };
         } catch (e) {
-            logger.error(`Start game error: ${e.message}`, {
-                stack: e.stack,
-            });
+            logger.error(`Start game error: ${e.message}`, { stack: e.stack });
             return {
                 status: "error",
                 message: "Failed to start game",
-                details:
-                    process.env.NODE_ENV === "development" ? e.message : null,
             };
         }
     }
 
-    checkAnswer(userId, userAnswer) {
+    async checkAnswer(userId, userAnswer) { // این متد باید async شود
         try {
             const playerId = this.userToPlayerMap[userId];
             if (!playerId || !this.players[playerId]) {
-                return {
-                    status: "error",
-                    message: "Player not found. Start a new game.",
-                };
+                return { status: "error", message: "Player not found. Start a new game." };
             }
 
             const player = this.players[playerId];
             player.last_activity = new Date();
 
             if (!player.game_active) {
-                return {
-                    status: "game_over",
-                    final_score: player.score,
-                };
+                return { status: "game_over", final_score: player.score };
             }
-
+            
             const is_correct = userAnswer === player.current_answer;
 
             if (is_correct) {
                 player.time_left = Math.min(40, player.time_left + 5);
                 player.score += 1;
-                player.top_score = Math.max(player.top_score, player.score);
             } else {
                 player.time_left = Math.max(0, player.time_left - 10);
             }
+            
+            let finalResult = null;
 
-            if (player.time_left <= 0) {
+            if (player.time_left <= 0 || !is_correct) {
                 player.game_active = false;
-                return {
+                
+                // بازی تمام شد! امتیاز نهایی را در دیتابیس ثبت کن
+                if (player.score > 0) {
+                    await Score.create({
+                        score: player.score,
+                        userTelegramId: userId
+                    });
+                    logger.info(`Saved score ${player.score} for user ${userId}`);
+                }
+
+                finalResult = {
                     status: "game_over",
                     final_score: player.score,
+                    top_score: Math.max(player.top_score, player.score)
                 };
             }
+            
+            if (player.game_active) {
+                const { problem, is_correct: answer } = mathEngine.generate();
+                player.current_problem = problem;
+                player.current_answer = answer;
 
-            const { problem, is_correct: answer } = mathEngine.generate();
-            player.current_problem = problem;
-            player.current_answer = answer;
+                finalResult = {
+                    status: "continue",
+                    problem: problem,
+                    time_left: player.time_left,
+                    score: player.score,
+                    feedback: is_correct ? "correct" : "wrong",
+                    game_active: true,
+                };
+            }
+            
+            return finalResult;
 
-            return {
-                status: "continue",
-                problem: problem,
-                time_left: player.time_left,
-                score: player.score,
-                feedback: is_correct ? "correct" : "wrong",
-                game_active: true,
-            };
         } catch (e) {
             logger.error(`Check answer error: ${e.message}`);
-            return {
-                status: "error",
-                message: e.message,
-            };
+            return { status: "error", message: e.message };
         }
     }
 }
@@ -377,7 +376,7 @@ app.post("/api/start", authenticateToken, async (req, res) => {
     }
 });
 
-app.post("/api/answer", authenticateToken, (req, res) => {
+app.post("/api/answer", authenticateToken, async (req, res) => {
     try {
         const { answer } = req.body;
         const user = req.user; // اطلاعات کاربر از توکن
@@ -389,7 +388,7 @@ app.post("/api/answer", authenticateToken, (req, res) => {
             });
         }
 
-        const result = gameInstance.checkAnswer(user.userId, answer);
+        const result = await gameInstance.checkAnswer(user.userId, answer);
 
         res.json(result);
     } catch (e) {
@@ -407,26 +406,33 @@ app.post("/api/answer", authenticateToken, (req, res) => {
     }
 });
 
-app.get("/api/leaderboard", (req, res) => {
+app.get("/api/leaderboard", async (req, res) => { // این مسیر باید async شود
     try {
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
 
-        const allPlayers = Object.values(gameInstance.players)
-            .filter(player => player.jwtPayload) // فقط بازیکنان احراز شده
-            .map((player) => ({
-                id: player.jwtPayload.userId, 
-                player_id: player.id,
-                score: player.top_score,
-                username: player.jwtPayload.username,
-                first_name: player.jwtPayload.firstName,
-                photo_url: player.jwtPayload.photo_url,
-                
-            }))
-            .sort((a, b) => b.score - a.score);
-
-        const leaderboard = allPlayers.slice(offset, offset + limit);
-        const total = allPlayers.length;
+        // کوئری قدرتمند برای گرفتن لیدربرد از دیتابیس
+        const { count, rows: leaderboard } = await User.findAndCountAll({
+            attributes: [
+                'telegramId', 
+                'username', 
+                'firstName',
+                'photo_url',
+                [sequelize.fn('MAX', sequelize.col('Scores.score')), 'top_score']
+            ],
+            include: [{
+                model: Score,
+                attributes: [] // فقط برای join کردن نیاز داریم، نه نمایش ستون‌ها
+            }],
+            group: ['User.telegramId'],
+            order: [[sequelize.fn('MAX', sequelize.col('Scores.score')), 'DESC']],
+            limit: limit,
+            offset: offset,
+            subQuery: false // برای limit و order کردن صحیح در join ضروری است
+        });
+        
+        // count در این حالت یک آرایه از نتایج برمیگرداند، پس طول آن را میگیریم
+        const total = count.length;
 
         res.json({
             status: "success",
@@ -439,17 +445,8 @@ app.get("/api/leaderboard", (req, res) => {
             },
         });
     } catch (e) {
-        logger.error(`Leaderboard error: ${e.message}`, {
-            stack: e.stack,
-        });
-
-        res.status(500).json({
-            status: "error",
-            message: "Internal server error",
-            ...(process.env.NODE_ENV === "development" && {
-                details: e.message,
-            }),
-        });
+        logger.error(`Leaderboard error: ${e.message}`, { stack: e.stack });
+        res.status(500).json({ status: "error", message: "Internal server error" });
     }
 });
 
