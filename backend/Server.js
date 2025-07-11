@@ -266,7 +266,7 @@ class MathGame {
             return { status: "error", message: e.message };
         }
     }
-    
+
 }
 
 const gameInstance = new MathGame();
@@ -408,12 +408,11 @@ app.post("/api/answer", authenticateToken, async (req, res) => {
     }
 });
 
-app.get("/api/leaderboard", async (req, res) => { // این مسیر باید async شود
+app.get("/api/leaderboard", async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
 
-        // کوئری قدرتمند برای گرفتن لیدربرد از دیتابیس
         const { count, rows: leaderboard } = await User.findAndCountAll({
             attributes: [
                 'telegramId', 
@@ -424,16 +423,18 @@ app.get("/api/leaderboard", async (req, res) => { // این مسیر باید as
             ],
             include: [{
                 model: Score,
-                attributes: [] // فقط برای join کردن نیاز داریم، نه نمایش ستون‌ها
+                required: true, // مهم: فقط کاربرانی که حداقل یک امتیاز دارند را نشان بده
+                attributes: []
             }],
-            group: ['User.telegramId'],
-            order: [[sequelize.fn('MAX', sequelize.col('Scores.score')), 'DESC']],
+            // --- شروع تغییر کلیدی ---
+            group: ['User.telegramId', 'User.username', 'User.firstName', 'User.photo_url'],
+            // --- پایان تغییر کلیدی ---
+            order: [[sequelize.literal('top_score'), 'DESC']], // مرتب‌سازی بر اساس نام مستعار ستون
             limit: limit,
             offset: offset,
-            subQuery: false // برای limit و order کردن صحیح در join ضروری است
+            subQuery: false
         });
         
-        // count در این حالت یک آرایه از نتایج برمیگرداند، پس طول آن را میگیریم
         const total = count.length;
 
         res.json({
