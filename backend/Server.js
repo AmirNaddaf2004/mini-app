@@ -458,7 +458,7 @@ app.get("/api/leaderboard", async (req, res) => {
                 username: user.username,
                 firstName: user.firstName,
                 photo_url: user.photo_url,
-                top_score: scoreEntry.max_score
+                score: scoreEntry.max_score
             };
         });
         
