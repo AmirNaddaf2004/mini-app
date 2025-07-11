@@ -3,16 +3,15 @@ const { Sequelize } = require('sequelize');
 
 // Database connection configuration
 const sequelize = new Sequelize(
-    'momisdb',  // Database name
-    'root',     // Database username
-    '13831383', // Database password
+    'momisdb',
+    'momis_user', // نام کاربری اپلیکیشن
+    '76304333(Mk)', // رمز عبور اپلیکیشن
     {
-        host: 'localhost',    // Database host
-        dialect: 'mysql',     // Specify MySQL as the dialect
-        logging: false,       // Disable logging of SQL queries (or set to console.log to see them)
+        host: 'localhost',
+        dialect: 'mysql',
+        logging: false,
     }
 );
-
 // Test the database connection
 sequelize.authenticate()
     .then(() => {

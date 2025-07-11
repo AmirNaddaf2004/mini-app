@@ -1,10 +1,18 @@
 <!-- RUN ON SERVER FROM GITHUB -->
+<!-- ورود به هاست -->
 root@DESKTOP-AGHA-MOSTAFA:~# ssh mostafa@65.109.186.25
+<!-- دریافت اپدیت ها از گیتهاب -->
 mostafa@ubuntu-4gb-hel1-4:~$ cd ../../var/www/mini-app/
+mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ git fetch origin
+mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ git pull
+<!-- ساخت بیلد جدید فرانت -->
+mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ cd frontend && npm run build && cd ..
+<!-- ریست کردن ران خودکار بک اند -->
+mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ pm2 restart mini-backend
 
 
 <!-- LOCAL RUN -->
-0: dont firget this:
+0: dont forget this:
 D:\GitHub\mini-app\backend\.env :
 PORT=10000
 BOT_TOKEN= "SALAM"
