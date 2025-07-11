@@ -40,3 +40,17 @@ https://math-backend.loca.lt
 
 Webapp URL:
 https://my-frontend.loca.lt
+
+
+
+
+<!-- بررسی و اتصال به دیتابیس -->
+<!-- داخل دایرکتوری اصلی mini-app در هاست -->
+mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ mysql -u momis_user -p
+<!-- بعدش پسوورد طولانیه که تو پیوی ندافه -->
+mysql> USE momisdb;
+<!-- مثلا دیدن یوزر ها -->
+mysql> SELECT * FROM users ORDER BY createdAt DESC LIMIT 10;
+<!-- دیدن اخرین امتیازای همه کاربرا -->
+mysql> SELECT s.score, s.createdAt, u.username  FROM scores AS s  JOIN users AS u ON s.userTelegramId =
+u.telegramId  ORDER BY s.createdAt DESC LIMIT 10;
