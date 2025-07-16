@@ -1,7 +1,7 @@
 const fetch = require("node-fetch");
 const logger = require("./logger"); // Use the existing logger for consistency
 
-const ONTON_API_BASE = "https://staging-app.toncloud.observer/api/v1/rewardhttps://staging-app.toncloud.observer/api/v1/reward";
+const ONTON_API_BASE = "https://staging-app.toncloud.observer/api/v1";
 const API_KEY = process.env.ONTON_API_KEY;
 const EVENT_UUID = process.env.ONTON_EVENT_UUID;
 
