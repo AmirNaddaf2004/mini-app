@@ -1,7 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-// const { v4: uuidv4 } = require("uuid");
+
+const { rewardUser } = require('./ontonApi');
+
 const path = require("path");
 const mathEngine = require("./math_engine.js");
 const validateTelegramData = require("./telegramAuth").default;
@@ -199,7 +201,7 @@ class MathGame {
         }
     }
 
-    async checkAnswer(userId, userAnswer) { // این متد باید async بماند
+    async checkAnswer(userId, userAnswer) {
         try {
             const playerId = this.userToPlayerMap[userId];
             if (!playerId || !this.players[playerId]) {
@@ -237,6 +239,28 @@ class MathGame {
                     logger.info(`Saved final score ${player.score} for user ${userId}`);
                 }
                 
+               // <<-- START: NEW ONTON INTEGRATION -->>
+                try {
+                    // 2. Make the user eligible for the ONTON reward
+                    const ontonResponse = await rewardUser(userId);
+                    const rewardLink = ontonResponse.data.reward_link;
+                    
+                    logger.info(`ONTON reward link for user ${userId}: ${rewardLink}`);
+                    
+                    // 3. (Optional but Recommended) Save the reward link to your database
+                    // You already have a Reward model, let's use it!
+                    await Reward.create({
+                      rewardLink: rewardLink,
+                      userTelegramId: userId,
+                      eventId: process.env.ONTON_EVENT_UUID // Store which event this reward belongs to
+                    });
+                    
+                } catch (ontonError) {
+                    logger.error(`Could not get reward from ONTON for user ${userId}: ${ontonError.message}`);
+                    // Note: We don't stop the game flow, just log the error.
+                }
+                // <<-- END: NEW ONTON INTEGRATION -->>
+
                 // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
                 player.top_score = Math.max(player.top_score, player.score);
 
