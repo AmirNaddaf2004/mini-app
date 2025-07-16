@@ -1,13 +1,21 @@
-// Import the db object from models/index.js which includes sequelize and all models
-const { sequelize, User, Score, Reward } = require('./models'); // Path to models/index.js
+// backend/sync-db.js
+
+// این فایل را فقط زمانی اجرا کنید که مدل‌های دیتابیس را تغییر داده‌اید
+
+require('dotenv').config(); // این خط را اضافه کنید تا به متغیرهای .env دسترسی داشته باشد
+const { sequelize } = require('./DataBase/models'); // مسیر صحیح به مدل‌ها
+
+console.log('Starting database synchronization...');
 
 // Synchronize all defined models to the database.
-// { force: false } will not drop tables if they already exist.
-// { alter: true } will attempt to alter existing tables to match the model (use with caution in production).
-sequelize.sync({ force: false, alter: true })
+sequelize.sync({ alter: true }) // alter: true سعی می‌کند جدول‌ها را با مدل‌ها هماهنگ کند
   .then(() => {
-    console.log('Database & tables checked/altered successfully!');
+    console.log('✅ Database & tables altered successfully!');
+    // پس از اتمام موفقیت‌آمیز، پروسه را به صورت خودکار پایان می‌دهد
+    process.exit(0);
   })
   .catch((error) => {
-    console.error('Error syncing database:', error);
+    console.error('❌ Error syncing database:', error);
+    // در صورت بروز خطا، با کد خطا از پروسه خارج می‌شود
+    process.exit(1);
   });
