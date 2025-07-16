@@ -15,6 +15,9 @@ mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ pm2 restart mini-backend
 pm2 list 
 <!-- بعدش اون بک اندی که میخوای را آیدیشو بردار و مثلا اگر 0 بود -->
 pm2 logs 0
+<!-- پاک کردن لاگ های قبلی برای تمرکز بیشتر -->
+pm2 flush
+
 
 <!-- LOCAL RUN -->
 0: dont forget this:

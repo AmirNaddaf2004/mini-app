@@ -13,6 +13,8 @@ async function rewardUser(userTelegramId) {
     throw new Error('Server configuration error for ONTON API.');
   }
 
+  logger.info(`DIAGNOSTIC: Checking for API Key. Is it present? ${!!API_KEY}`);
+
   const endpoint = `${ONTON_API_BASE}/reward`;
   const body = {
     event_uuid: EVENT_UUID,
