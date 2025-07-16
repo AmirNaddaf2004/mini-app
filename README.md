@@ -11,6 +11,10 @@ mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ cd frontend && npm run build && cd 
 mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ pm2 restart mini-backend
 
 
+<!-- گرفتن لاگ های بک اند-->
+pm2 list 
+<!-- بعدش اون بک اندی که میخوای را آیدیشو بردار و مثلا اگر 0 بود -->
+pm2 logs 0
 
 <!-- LOCAL RUN -->
 0: dont forget this:

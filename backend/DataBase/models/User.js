@@ -24,6 +24,10 @@ const User = sequelize.define(
             type: DataTypes.STRING,
             allowNull: true,           // Last name is optional on Telegram
         },
+          photo_url: {
+            type: DataTypes.STRING,
+            allowNull: true, // ممکن است برخی کاربران عکس پروفایل نداشته باشند
+        },
     },
     {
         tableName: "users",         // Explicitly define the table name
