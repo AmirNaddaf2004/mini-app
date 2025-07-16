@@ -1,70 +1,58 @@
-const fetch = require("node-fetch");
-const logger = require("./logger"); // Use the existing logger for consistency
+// backend/ontonApi.js
 
-const ONTON_API_BASE = "https://staging-app.toncloud.observer/api/v1";
-const API_KEY = process.env.ONTON_API_KEY;
+const fetch = require('node-fetch');
+const logger = require('./logger');
+
+// آدرس پایه جدیدی که مسئول ONTON به شما داده است
+const ONTON_API_BASE = 'https://staging-app.toncloud.observer/api/v1'; 
+const API_KEY = process.env.ONTON_API_KEY ? process.env.ONTON_API_KEY.trim() : null;
 const EVENT_UUID = process.env.ONTON_EVENT_UUID;
 
 async function rewardUser(userTelegramId) {
-    // Check if the required environment variables are set
+    // لاگ‌های تشخیصی (می‌توانند باقی بمانند)
+    logger.info(`DIAGNOSTIC: API Key value check. Key length: ${API_KEY ? API_KEY.length : '0'}`);
+    logger.info(`DIAGNOSTIC: Key first 3 chars: ${API_KEY ? API_KEY.substring(0, 3) : 'N/A'}`);
+
     if (!API_KEY || !EVENT_UUID) {
-        logger.error(
-            "ONTON_API_KEY or ONTON_EVENT_UUID is not set in .env file."
-        );
-        throw new Error("Server configuration error for ONTON API.");
+        logger.error('ONTON_API_KEY or ONTON_EVENT_UUID is not set in .env file.');
+        throw new Error('Server configuration error for ONTON API.');
     }
 
-    logger.info(`DIAGNOSTIC: API Key value check.`);
-    logger.info(`DIAGNOSTIC: Key length: ${API_KEY ? API_KEY.length : "0"}`);
-    logger.info(
-        `DIAGNOSTIC: Key first 3 chars: ${
-            API_KEY ? API_KEY.substring(0, 3) : "N/A"
-        }`
-    );
-    
+    // ▼▼▼ ساخت صحیح URL ▼▼▼
     const endpoint = `${ONTON_API_BASE}/reward`;
+    // ▲▲▲ پایان ساخت صحیح URL ▲▲▲
+
     const body = {
         event_uuid: EVENT_UUID,
-        reward_user_id: parseInt(userTelegramId, 10), // Ensure it's an integer
+        reward_user_id: parseInt(userTelegramId, 10),
     };
 
-    logger.info(
-        `Sending reward request to ONTON for user ${userTelegramId}...`
-    );
+    logger.info(`Sending reward request to ONTON. URL: ${endpoint}`);
 
     try {
         const response = await fetch(endpoint, {
-            method: "POST",
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
-                accept: "application/json",
-                "api-key": API_KEY,
+                'Content-Type': 'application/json',
+                'accept': 'application/json',
+                'api-key': API_KEY, // نام هدر را به حالت استاندارد داکیومنت برگرداندم
             },
             body: JSON.stringify(body),
         });
 
-        const responseData = await response.json();
+        const responseData = await response.json(); // تلاش برای خواندن پاسخ به صورت JSON
 
         if (!response.ok) {
-            // Handle non-successful responses (4xx, 5xx)
-            const errorMessage =
-                responseData.error ||
-                responseData.message ||
-                "Unknown ONTON API error";
-            logger.error(
-                `ONTON API Error (Status: ${response.status}): ${errorMessage}`,
-                { body }
-            );
+            const errorMessage = responseData.error || responseData.message || 'Unknown ONTON API error';
+            logger.error(`ONTON API Error (Status: ${response.status}): ${errorMessage}`, { body });
             throw new Error(errorMessage);
         }
 
-        logger.info(
-            `Successfully received reward link from ONTON for user ${userTelegramId}.`
-        );
-        return responseData; // This will be { status: 'success', data: { reward_link: '...' } }
+        logger.info(`Successfully received response from ONTON for user ${userTelegramId}.`);
+        return responseData;
+
     } catch (error) {
-        logger.error("Failed to communicate with ONTON API:", error);
-        // Re-throw the error to be caught by the calling function
+        logger.error(`Failed to communicate with ONTON API: ${error.toString()}`);
         throw error;
     }
 }
