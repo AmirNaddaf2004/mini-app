@@ -1,29 +1,27 @@
-// Import DataTypes from Sequelize and the sequelize instance
-const { DataTypes } = require("sequelize");
-const sequelize = require("../database"); // Path to the sequelize instance
+// backend/DataBase/models/Reward.js
 
-// Define the Reward model
+const { DataTypes } = require("sequelize");
+const sequelize = require("../database");
+
 const Reward = sequelize.define(
-    "Reward", // Model name
+    "Reward",
     {
-        // 'id' (PK) will be automatically added by Sequelize
-        reward_type: {
+        // ستون جدید برای ذخیره لینک پاداش از ONTON
+        rewardLink: {
             type: DataTypes.STRING,
-            allowNull: true,           // Type of reward (e.g., "Coin", "Badge")
+            allowNull: false, // لینک پاداش همیشه باید وجود داشته باشد
         },
-        reward_value: {
-            type: DataTypes.STRING,    // Value of the reward (e.g., "100", "Speedster")
-                                       // Consider DataTypes.INTEGER if it's always a number
-            allowNull: true,
+        // ستون جدید برای ذخیره شناسه رویداد
+        eventId: {
+            type: DataTypes.STRING,
+            allowNull: true, // اختیاری، اما برای پیگیری بهتر است باشد
         },
-        // The foreign key 'userTelegramId' will be added via the association
-        // defined in models/index.js
+        // userTelegramId از طریق ارتباط با مدل User اضافه خواهد شد
     },
     {
-        tableName: "rewards",       // Explicitly define the table name
-        timestamps: true,           // Adds createdAt and updatedAt fields
+        tableName: "rewards",
+        timestamps: true,
     }
 );
 
-// Export the Reward model
 module.exports = Reward;

@@ -5,11 +5,7 @@ const ONTON_API_BASE = 'https://app.onton.live/api/v1';
 const API_KEY = process.env.ONTON_API_KEY;
 const EVENT_UUID = process.env.ONTON_EVENT_UUID;
 
-/**
- * Makes a user eligible for an SBT reward from ONTON.
- * @param {number} userTelegramId - The numeric Telegram ID of the user to be rewarded.
- * @returns {Promise<object>} - The success response from ONTON, including the reward_link.
- */
+
 async function rewardUser(userTelegramId) {
   // Check if the required environment variables are set
   if (!API_KEY || !EVENT_UUID) {

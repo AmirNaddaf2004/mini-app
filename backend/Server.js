@@ -3,13 +3,14 @@ const express = require("express");
 const cors = require("cors");
 
 const { rewardUser } = require('./ontonApi');
+const logger = require('./logger');
 
 const path = require("path");
 const mathEngine = require("./math_engine.js");
 const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
 
-const { User, Score, sequelize } = require("./DataBase/models");
+const { User, Score, Reward, sequelize } = require("./DataBase/models");
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -37,13 +38,6 @@ const corsOptions = {
 
 app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
-
-const logger = {
-    info: (message) =>
-        console.log(`[INFO] ${new Date().toISOString()} - ${message}`),
-    error: (message) =>
-        console.error(`[ERROR] ${new Date().toISOString()} - ${message}`),
-};
 
 class Player {
     constructor(playerId, jwtPayload) {
