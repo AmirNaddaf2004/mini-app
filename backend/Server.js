@@ -104,6 +104,8 @@ class MathGame {
         });
     }
 
+    // backend/Server.js -> داخل کلاس MathGame
+
     runTimer(playerId) {
         const player = this.players[playerId];
         if (!player) return;
@@ -111,14 +113,24 @@ class MathGame {
         player.should_stop = false;
 
         const tick = () => {
-            if (!player || player.should_stop || !player.game_active) return;
+            if (!player || player.should_stop || !player.game_active) {
+                return;
+            }
 
             player.time_left -= 1;
             player.last_activity = new Date();
 
             if (player.time_left <= 0) {
                 player.game_active = false;
-                logger.info(`Player ${playerId} game over - time expired`);
+                logger.info(
+                    `Player ${playerId} game over - time expired. Triggering final check...`
+                );
+
+                // ▼▼▼ این خط مهم‌ترین تغییر است ▼▼▼
+                // به صورت خودکار checkAnswer را فراخوانی می‌کنیم تا امتیاز و پاداش ثبت شود
+                this.checkAnswer(player.jwtPayload.userId, null); // ارسال null به عنوان پاسخ
+                // ▲▲▲ پایان تغییر مهم ▲▲▲
+
                 return;
             }
 

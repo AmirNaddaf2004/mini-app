@@ -58,3 +58,7 @@ mysql> SELECT * FROM users ORDER BY createdAt DESC LIMIT 10;
 <!-- دیدن اخرین امتیازای همه کاربرا -->
 mysql> SELECT s.score, s.createdAt, u.username  FROM scores AS s  JOIN users AS u ON s.userTelegramId =
 u.telegramId  ORDER BY s.createdAt DESC LIMIT 10;
+
+
+<!-- ریست و آپدین کردن دیتابیس بدون حذف دیتای قبلیب -->
+mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app/backend/DataBase$ node syncDatabase.js
