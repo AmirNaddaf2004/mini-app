@@ -11,7 +11,7 @@ const EVENT_UUID = process.env.ONTON_EVENT_UUID;
 async function rewardUser(userTelegramId) {
     // لاگ‌های تشخیصی (می‌توانند باقی بمانند)
     logger.info(`DIAGNOSTIC: API Key value check. Key length: ${API_KEY ? API_KEY.length : '0'}`);
-    logger.info(`DIAGNOSTIC: Key first 3 chars: ${API_KEY ? API_KEY.substring(0, 3) : 'N/A'}`);
+    logger.info(`DIAGNOSTIC: Key first 10 chars: ${API_KEY ? API_KEY.substring(0, 10) : 'N/A'}`);
 
     if (!API_KEY || !EVENT_UUID) {
         logger.error('ONTON_API_KEY or ONTON_EVENT_UUID is not set in .env file.');
