@@ -11,6 +11,7 @@ mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ cd frontend && npm run build && cd 
 mostafa@ubuntu-4gb-hel1-4:/var/www/mini-app$ pm2 restart mini-backend
 
 
+
 <!-- LOCAL RUN -->
 0: dont forget this:
 D:\GitHub\mini-app\backend\.env :
@@ -40,7 +41,6 @@ https://math-backend.loca.lt
 
 Webapp URL:
 https://my-frontend.loca.lt
-
 
 
 
