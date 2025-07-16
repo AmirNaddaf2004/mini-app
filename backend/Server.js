@@ -2,8 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const { rewardUser } = require('./ontonApi');
-const logger = require('./logger');
+const { rewardUser } = require("./ontonApi");
+const logger = require("./logger");
 
 const path = require("path");
 const mathEngine = require("./math_engine.js");
@@ -19,7 +19,7 @@ app.use(express.json());
 const allowedOrigins = [
     "https://momis.studio",
     "https://www.momis.studio",
-    "https://web.telegram.org"
+    "https://web.telegram.org",
 ];
 
 app.use((req, res, next) => {
@@ -85,12 +85,12 @@ class MathGame {
                     this.cleanup_interval
                 ) {
                     const player = this.players[pid];
-                    
+
                     // حذف از نگاشت کاربر به بازیکن
                     if (player.jwtPayload?.userId) {
                         delete this.userToPlayerMap[player.jwtPayload.userId];
                     }
-                    
+
                     if (player.timer) {
                         player.should_stop = true;
                         clearTimeout(player.timer);
@@ -128,7 +128,8 @@ class MathGame {
         player.timer = setTimeout(tick, 1000);
     }
 
-    async startGame(jwtPayload) { // این متد باید async شود
+    async startGame(jwtPayload) {
+        // این متد باید async شود
         try {
             const userId = jwtPayload?.userId;
             if (!userId) {
@@ -149,7 +150,9 @@ class MathGame {
             // ۲. بالاترین امتیاز قبلی کاربر را از دیتابیس بخوان
             const topScoreResult = await Score.findOne({
                 where: { userTelegramId: userId },
-                attributes: [[sequelize.fn('max', sequelize.col('score')), 'top_score']],
+                attributes: [
+                    [sequelize.fn("max", sequelize.col("score")), "top_score"],
+                ],
                 raw: true,
             });
             const top_score = topScoreResult.top_score || 0;
@@ -158,9 +161,9 @@ class MathGame {
             const playerId = userId; // می‌توانیم از همان آیدی تلگرام استفاده کنیم
             this.players[playerId] = new Player(playerId, jwtPayload);
             this.userToPlayerMap[userId] = playerId;
-            
+
             const player = this.players[playerId];
-            
+
             // ۴. مقداردهی اولیه بازیکن با اطلاعات دیتابیس و شروع بازی
             player.game_active = true;
             player.time_left = this.total_time;
@@ -184,7 +187,7 @@ class MathGame {
                 score: player.score,
                 top_score: player.top_score, // ارسال بالاترین امتیاز به فرانت‌اند
                 game_active: true,
-                user: user.toJSON()
+                user: user.toJSON(),
             };
         } catch (e) {
             logger.error(`Start game error: ${e.message}`, { stack: e.stack });
@@ -199,14 +202,21 @@ class MathGame {
         try {
             const playerId = this.userToPlayerMap[userId];
             if (!playerId || !this.players[playerId]) {
-                return { status: "error", message: "Player not found. Start a new game." };
+                return {
+                    status: "error",
+                    message: "Player not found. Start a new game.",
+                };
             }
 
             const player = this.players[playerId];
             player.last_activity = new Date();
 
             if (!player.game_active) {
-                return { status: "game_over", final_score: player.score, top_score: player.top_score };
+                return {
+                    status: "game_over",
+                    final_score: player.score,
+                    top_score: player.top_score,
+                };
             }
 
             const is_correct = userAnswer === player.current_answer;
@@ -223,45 +233,74 @@ class MathGame {
             // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
             if (player.time_left <= 0) {
                 player.game_active = false;
-                
+
                 // حالا که بازی تمام شده، امتیاز نهایی را در دیتابیس ثبت می‌کنیم
                 if (player.score > 0) {
                     await Score.create({
                         score: player.score,
-                        userTelegramId: userId
+                        userTelegramId: userId,
                     });
-                    logger.info(`Saved final score ${player.score} for user ${userId}`);
+                    logger.info(
+                        `Saved final score ${player.score} for user ${userId}`
+                    );
                 }
-                
-               // <<-- START: NEW ONTON INTEGRATION -->>
-                try {
-                    // 2. Make the user eligible for the ONTON reward
-                    const ontonResponse = await rewardUser(userId);
-                    const rewardLink = ontonResponse.data.reward_link;
-                    
-                    logger.info(`ONTON reward link for user ${userId}: ${rewardLink}`);
-                    
-                    // 3. (Optional but Recommended) Save the reward link to your database
-                    // You already have a Reward model, let's use it!
-                    await Reward.create({
-                      rewardLink: rewardLink,
-                      userTelegramId: userId,
-                      eventId: process.env.ONTON_EVENT_UUID // Store which event this reward belongs to
-                    });
-                    
-                } catch (ontonError) {
-                    logger.error(`Could not get reward from ONTON for user ${userId}: ${ontonError.message}`);
-                    // Note: We don't stop the game flow, just log the error.
-                }
-                // <<-- END: NEW ONTON INTEGRATION -->>
 
+                // <<-- START: REVISED ONTON INTEGRATION -->>
+                if (player.score > 0) {
+                    logger.info(
+                        `Player ${userId} finished with score ${player.score}. Attempting to process ONTON reward.`
+                    );
+
+                    try {
+                        const ontonResponse = await rewardUser(userId);
+
+                        // ۱. بررسی می‌کنیم که آیا پاسخ از ONTON معتبر است و لینک پاداش دارد یا نه
+                        if (
+                            ontonResponse &&
+                            ontonResponse.data &&
+                            ontonResponse.data.reward_link
+                        ) {
+                            const rewardLink = ontonResponse.data.reward_link;
+                            logger.info(
+                                `SUCCESS: Received reward link from ONTON for user ${userId}.`
+                            );
+
+                            // ۲. حالا تلاش می‌کنیم لینک را در دیتابیس خودمان ذخیره کنیم
+                            await Reward.create({
+                                rewardLink: rewardLink,
+                                userTelegramId: userId,
+                                eventId: process.env.ONTON_EVENT_UUID,
+                            });
+                            logger.info(
+                                `SUCCESS: Reward link saved to local DB for user ${userId}.`
+                            );
+                        } else {
+                            // اگر پاسخ از ONTON موفق بود اما فرمت آن چیزی نبود که انتظار داشتیم
+                            logger.error(
+                                `UNEXPECTED RESPONSE: ONTON API call was successful but the response format was not as expected.`,
+                                ontonResponse
+                            );
+                        }
+                    } catch (ontonError) {
+                        // اگر خود فرآیند ارتباط با API خطا داد
+                        logger.error(
+                            `CRITICAL API_CALL_FAILED: Could not get reward from ONTON for user ${userId}. Error: ${ontonError.message}`
+                        );
+                    }
+                } else {
+                    // اگر بازی با امتیاز صفر تمام شد
+                    logger.info(
+                        `Player ${userId} finished with score 0. No reward will be processed.`
+                    );
+                }
+                // <<-- END: REVISED ONTON INTEGRATION -->>
                 // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
                 player.top_score = Math.max(player.top_score, player.score);
 
                 return {
                     status: "game_over",
                     final_score: player.score,
-                    top_score: player.top_score
+                    top_score: player.top_score,
                 };
             }
 
@@ -278,13 +317,11 @@ class MathGame {
                 feedback: is_correct ? "correct" : "wrong",
                 game_active: true,
             };
-
         } catch (e) {
             logger.error(`Check answer error: ${e.message}`);
             return { status: "error", message: e.message };
         }
     }
-
 }
 
 const gameInstance = new MathGame();
@@ -434,14 +471,14 @@ app.get("/api/leaderboard", async (req, res) => {
         // مرحله ۱: بالاترین امتیاز را برای هر کاربر پیدا کن
         const topScores = await Score.findAll({
             attributes: [
-                'userTelegramId',
-                [sequelize.fn('MAX', sequelize.col('score')), 'max_score']
+                "userTelegramId",
+                [sequelize.fn("MAX", sequelize.col("score")), "max_score"],
             ],
-            group: ['userTelegramId'],
-            order: [[sequelize.fn('MAX', sequelize.col('score')), 'DESC']],
+            group: ["userTelegramId"],
+            order: [[sequelize.fn("MAX", sequelize.col("score")), "DESC"]],
             limit: limit,
             offset: offset,
-            raw: true // نتیجه را به صورت یک آرایه ساده برمی‌گرداند
+            raw: true, // نتیجه را به صورت یک آرایه ساده برمی‌گرداند
         });
 
         if (topScores.length === 0) {
@@ -451,15 +488,15 @@ app.get("/api/leaderboard", async (req, res) => {
                 meta: { total: 0, limit, offset, has_more: false },
             });
         }
-        
-        const userIds = topScores.map(s => s.userTelegramId);
+
+        const userIds = topScores.map((s) => s.userTelegramId);
 
         // مرحله ۲: اطلاعات کامل کاربران برنده را بر اساس ID هایی که پیدا کردیم، واکشی کن
         const users = await User.findAll({
             where: {
-                telegramId: userIds
+                telegramId: userIds,
             },
-            raw: true
+            raw: true,
         });
 
         // یک مپ برای دسترسی سریع به اطلاعات هر کاربر بساز
@@ -467,21 +504,24 @@ app.get("/api/leaderboard", async (req, res) => {
             map[user.telegramId] = user;
             return map;
         }, {});
-        
+
         // مرحله ۳: نتایج دو مرحله را با هم ترکیب کن تا لیدربرد نهایی ساخته شود
-        const leaderboard = topScores.map(scoreEntry => {
+        const leaderboard = topScores.map((scoreEntry) => {
             const user = userMap[scoreEntry.userTelegramId];
             return {
                 telegramId: user.telegramId,
                 username: user.username,
                 firstName: user.firstName,
                 photo_url: user.photo_url,
-                score: scoreEntry.max_score
+                score: scoreEntry.max_score,
             };
         });
-        
+
         // شمارش کل بازیکنان دارای امتیاز برای صفحه‌بندی (Pagination)
-        const totalCount = await Score.count({ distinct: true, col: 'userTelegramId' });
+        const totalCount = await Score.count({
+            distinct: true,
+            col: "userTelegramId",
+        });
 
         res.json({
             status: "success",
@@ -493,10 +533,12 @@ app.get("/api/leaderboard", async (req, res) => {
                 has_more: offset + limit < totalCount,
             },
         });
-        
     } catch (e) {
         logger.error(`Leaderboard error: ${e.message}`, { stack: e.stack });
-        res.status(500).json({ status: "error", message: "Internal server error" });
+        res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+        });
     }
 });
 
