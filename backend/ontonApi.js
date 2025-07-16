@@ -28,7 +28,6 @@ async function rewardUser(userTelegramId) {
     };
 
     logger.info(`Sending reward request to ONTON. URL: ${endpoint}`);
-    logger.info(`Sending reward request to ONTON. URL: ${endpoint}`);
     logger.info('Sending request with these exact headers:', headers);
     
     // ▼▼▼ این خط جدید را اضافه کرده‌ام ▼▼▼
