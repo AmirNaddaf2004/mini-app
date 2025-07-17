@@ -1,3 +1,4 @@
+// backend/DataBase/models/Score.js
 
 const { DataTypes } = require("sequelize");
 const sequelize = require("../database");
@@ -12,6 +13,7 @@ const Score = sequelize.define(
         eventId: {
             type: DataTypes.STRING,
             // Allow this field to be null for "Free Play" games.
+            allowNull: true, // <-- This is the only change here.
             comment: "The UUID of the ONTON event. NULL if it's a free play.",
         },
     },
