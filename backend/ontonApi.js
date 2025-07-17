@@ -42,6 +42,10 @@ async function rewardUser(userTelegramId) {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             const responseData = await response.json();
+            
+            logger.info('Full JSON response from ONTON:', responseData);
+
+            
             if (!response.ok) {
                 const errorMessage = responseData.error || responseData.message || 'Unknown ONTON API error';
                 logger.error(`ONTON API Error (Status: ${response.status}): ${errorMessage}`, { body: responseData });
