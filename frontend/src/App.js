@@ -37,7 +37,6 @@ function App() {
     const [gameActive, setGameActive] = useState(false);
     const [currentGameEventId, setCurrentGameEventId] = useState(null);
 
-
     const timerId = useRef(null);
     const abortControllerRef = useRef(null);
 
@@ -335,7 +334,15 @@ function App() {
     const lobbyContent = useMemo(() => {
         if (view !== "lobby") return null;
 
-        return <GameLobby onGameStart={startGame} />;
+        // Pass the necessary user data and functions to the lobby component
+        return (
+            <GameLobby
+                onGameStart={startGame}
+                userData={userData}
+                onLogout={handleLogout}
+                onImageError={handleImageError}
+            />
+        );
     }, [view, startGame]);
     // محتوای بازی
     const gameContent = useMemo(() => {
@@ -401,7 +408,7 @@ function App() {
                     eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
                 />
             ),
-    [view, leaderboardKey, finalScore, userData, currentGameEventId]
+        [view, leaderboardKey, finalScore, userData, currentGameEventId]
     );
 
     return (
