@@ -35,6 +35,8 @@ function App() {
         return saved ? JSON.parse(saved) : null;
     });
     const [gameActive, setGameActive] = useState(false);
+    const [currentGameEventId, setCurrentGameEventId] = useState(null);
+
     const [leaderboardEventId, setLeaderboardEventId] = useState(null);
 
     const timerId = useRef(null);
@@ -195,6 +197,8 @@ function App() {
     // MODIFIED: The `startGame` function now accepts `eventId`
     const startGame = useCallback(
         async (eventId) => {
+            setCurrentGameEventId(eventId); // شناسه رویداد این دور از بازی را به خاطر بسپار
+
             // It now takes eventId as an argument
             if (!isAuthenticated || !token) {
                 setError("Please authenticate first");
@@ -396,10 +400,17 @@ function App() {
                     onReplay={() => setView("lobby")}
                     onHome={() => setView("lobby")}
                     userData={userData}
-                    eventId={leaderboardEventId} // Pass the new prop
+                    eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
                 />
             ),
-        [view, leaderboardKey, finalScore, userData, leaderboardEventId]
+        [
+            view,
+            leaderboardKey,
+            startGame,
+            finalScore,
+            userData,
+            currentGameEventId,
+        ]
     );
 
     return (
