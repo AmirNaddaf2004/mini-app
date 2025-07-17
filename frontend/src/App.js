@@ -37,7 +37,6 @@ function App() {
     const [gameActive, setGameActive] = useState(false);
     const [currentGameEventId, setCurrentGameEventId] = useState(null);
 
-    const [leaderboardEventId, setLeaderboardEventId] = useState(null);
 
     const timerId = useRef(null);
     const abortControllerRef = useRef(null);
@@ -51,11 +50,10 @@ function App() {
     }, []);
 
     const handleGameOver = useCallback(
-        (finalScore, eventId) => {
+        (finalScore) => {
             clearResources();
             setProblem(null);
             setFinalScore(finalScore);
-            setLeaderboardEventId(eventId); // Set the eventId for the leaderboard
             setView("board");
             setLeaderboardKey(Date.now());
             setGameActive(false);
@@ -403,14 +401,7 @@ function App() {
                     eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
                 />
             ),
-        [
-            view,
-            leaderboardKey,
-            startGame,
-            finalScore,
-            userData,
-            currentGameEventId,
-        ]
+    [view, leaderboardKey, finalScore, userData, currentGameEventId]
     );
 
     return (
