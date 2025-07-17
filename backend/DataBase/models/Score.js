@@ -1,24 +1,24 @@
-// Import DataTypes from Sequelize and the sequelize instance
-const { DataTypes } = require("sequelize");
-const sequelize = require("../database"); // Path to the sequelize instance
 
-// Define the Score model
+const { DataTypes } = require("sequelize");
+const sequelize = require("../database");
+
 const Score = sequelize.define(
-    "Score", // Model name
+    "Score",
     {
-        // 'id' (PK) will be automatically added by Sequelize
         score: {
             type: DataTypes.INTEGER,
-            allowNull: false,          // A score value must be present
+            allowNull: false,
         },
-        // The foreign key 'userTelegramId' will be added via the association
-        // defined in models/index.js
+        eventId: {
+            type: DataTypes.STRING,
+            // Allow this field to be null for "Free Play" games.
+            comment: "The UUID of the ONTON event. NULL if it's a free play.",
+        },
     },
     {
-        tableName: "scores",        // Explicitly define the table name
-        timestamps: true,           // Adds createdAt and updatedAt fields
+        tableName: "scores",
+        timestamps: true,
     }
 );
 
-// Export the Score model
 module.exports = Score;

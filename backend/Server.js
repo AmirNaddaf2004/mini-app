@@ -52,6 +52,9 @@ class Player {
         this.timer = null;
         this.should_stop = false;
         this.last_activity = new Date();
+
+        this.currentEventId = null;
+
         logger.info(`New player created: ${jwtPayload?.userId}`);
     }
 }
@@ -112,7 +115,7 @@ class MathGame {
 
         player.should_stop = false;
 
-        const tick = () => {
+        const tick = async () => {
             if (!player || player.should_stop || !player.game_active) {
                 return;
             }
@@ -122,14 +125,25 @@ class MathGame {
 
             if (player.time_left <= 0) {
                 player.game_active = false;
-                logger.info(
-                    `Player ${playerId} game over - time expired. Triggering final check...`
-                );
 
-                // ▼▼▼ این خط مهم‌ترین تغییر است ▼▼▼
-                // به صورت خودکار checkAnswer را فراخوانی می‌کنیم تا امتیاز و پاداش ثبت شود
+                if (player.score > 0) {
+                    // ▼▼▼ Use the stored eventId from the player's session ▼▼▼
+                    await Score.create({
+                        score: player.score,
+                        userTelegramId: userId,
+                        eventId: player.currentEventId, // This can be a UUID or null
+                    });
+                    logger.info(
+                        `Saved final score ${
+                            player.score
+                        } for user ${userId} in event ${
+                            player.currentEventId || "Free Play"
+                        }`
+                    );
+                    // ▲▲▲ End of change ▲▲▲
+                }
+
                 this.checkAnswer(player.jwtPayload.userId, null); // ارسال null به عنوان پاسخ
-                // ▲▲▲ پایان تغییر مهم ▲▲▲
 
                 return;
             }
@@ -140,7 +154,7 @@ class MathGame {
         player.timer = setTimeout(tick, 1000);
     }
 
-    async startGame(jwtPayload) {
+    async startGame(jwtPayload, eventId = null) {
         // این متد باید async شود
         try {
             const userId = jwtPayload?.userId;
@@ -183,6 +197,13 @@ class MathGame {
             player.top_score = top_score; // بالاترین امتیاز از دیتابیس خوانده شد
             player.should_stop = false;
             player.last_activity = new Date();
+
+            player.currentEventId = eventId;
+            logger.info(
+                `Game started for user ${userId}. Event ID: ${
+                    eventId || "Free Play"
+                }`
+            );
 
             const { problem, is_correct } = mathEngine.generate();
             player.current_problem = problem;
@@ -248,64 +269,17 @@ class MathGame {
 
                 // حالا که بازی تمام شده، امتیاز نهایی را در دیتابیس ثبت می‌کنیم
                 if (player.score > 0) {
+                    // ثبت امتیاز به همراه شناسه رویداد فعلی
                     await Score.create({
                         score: player.score,
                         userTelegramId: userId,
+                        eventId: process.env.ONTON_EVENT_UUID, // شناسه رویداد از فایل .env خوانده می‌شود
                     });
                     logger.info(
-                        `Saved final score ${player.score} for user ${userId}`
+                        `Saved final score ${player.score} for user ${userId} in event ${process.env.ONTON_EVENT_UUID}`
                     );
                 }
 
-                // <<-- START: REVISED ONTON INTEGRATION -->>
-                if (player.score > 0) {
-                    logger.info(
-                        `Player ${userId} finished with score ${player.score}. Attempting to process ONTON reward.`
-                    );
-
-                    try {
-                        const ontonResponse = await rewardUser(userId);
-
-                        // ۱. بررسی می‌کنیم که آیا پاسخ از ONTON معتبر است و لینک پاداش دارد یا نه
-                        if (
-                            ontonResponse &&
-                            ontonResponse.data &&
-                            ontonResponse.data.reward_link
-                        ) {
-                            const rewardLink = ontonResponse.data.reward_link;
-                            logger.info(
-                                `SUCCESS: Received reward link from ONTON for user ${userId}.`
-                            );
-
-                            // ۲. حالا تلاش می‌کنیم لینک را در دیتابیس خودمان ذخیره کنیم
-                            await Reward.create({
-                                rewardLink: rewardLink,
-                                userTelegramId: userId,
-                                eventId: process.env.ONTON_EVENT_UUID,
-                            });
-                            logger.info(
-                                `SUCCESS: Reward link saved to local DB for user ${userId}.`
-                            );
-                        } else {
-                            // اگر پاسخ از ONTON موفق بود اما فرمت آن چیزی نبود که انتظار داشتیم
-                            logger.error(
-                                `UNEXPECTED RESPONSE: ONTON API call was successful but the response format was not as expected.`,
-                                ontonResponse
-                            );
-                        }
-                    } catch (ontonError) {
-                        // اگر خود فرآیند ارتباط با API خطا داد
-                        logger.error(
-                            `CRITICAL API_CALL_FAILED: Could not get reward from ONTON for user ${userId}. Error: ${ontonError.message}`
-                        );
-                    }
-                } else {
-                    // اگر بازی با امتیاز صفر تمام شد
-                    logger.info(
-                        `Player ${userId} finished with score 0. No reward will be processed.`
-                    );
-                }
-                // <<-- END: REVISED ONTON INTEGRATION -->>
                 // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
                 player.top_score = Math.max(player.top_score, player.score);
 
@@ -419,7 +393,9 @@ app.post("/api/start", authenticateToken, async (req, res) => {
     try {
         const user = req.user; // اطلاعات کاربر از توکن
 
-        logger.info(`Start game request for user: ${user.userId}`);
+        const { eventId } = req.body; // eventId can be a string or null/undefined
+
+        logger.info(`Start game request for user: ${user.userId}`, { eventId });
 
         const result = await gameInstance.startGame({
             userId: user.userId,
@@ -554,6 +530,26 @@ app.get("/api/leaderboard", async (req, res) => {
     }
 });
 
+app.get("/api/events", (req, res) => {
+    // In a real-world scenario, you would fetch these from a database.
+    // For now, we use the values from the .env file as the active event.
+    const activeEvents = [];
+
+    if (process.env.ONTON_EVENT_UUID) {
+        activeEvents.push({
+            id: process.env.ONTON_EVENT_UUID,
+            name: "Main Tournament", // You can make this name dynamic later
+            description: "Compete for the grand prize in the main event!",
+        });
+    }
+    // You can add more hardcoded events for testing
+    // activeEvents.push({ id: 'some-other-uuid', name: 'Weekend Challenge' });
+
+    res.json({
+        status: "success",
+        events: activeEvents,
+    });
+});
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
 });
