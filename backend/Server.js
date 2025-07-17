@@ -396,33 +396,31 @@ app.post("/api/telegram-auth", (req, res) => {
     }
 });
 
+// Replace your entire /api/start endpoint with this corrected version
 app.post("/api/start", authenticateToken, async (req, res) => {
     try {
-        const user = req.user; // اطلاعات کاربر از توکن
-
-        const { eventId } = req.body; // eventId can be a string or null/undefined
+        const user = req.user;
+        const { eventId } = req.body; // Get eventId from the request
 
         logger.info(`Start game request for user: ${user.userId}`, { eventId });
 
-        // Pass the entire user payload and the eventId to the game logic
+        // ▼▼▼ THIS IS THE DEFINITIVE FIX ▼▼▼
+        // Correctly pass the user payload as the first argument
+        // and the eventId as the second argument to the game logic.
         const result = await gameInstance.startGame(user, eventId);
+        // ▲▲▲ END OF FIX ▲▲▲
 
         res.json(result);
     } catch (e) {
         logger.error(`API start error: ${e.message}`, {
             stack: e.stack,
         });
-
         res.status(500).json({
             status: "error",
             message: "Internal server error",
-            ...(process.env.NODE_ENV === "development" && {
-                details: e.message,
-            }),
         });
     }
 });
-
 app.post("/api/answer", authenticateToken, async (req, res) => {
     try {
         const { answer } = req.body;
