@@ -154,7 +154,7 @@ class MathGame {
     // backend/Server.js -> inside the MathGame class
 
     // Replace your entire startGame function with this definitive, corrected version
-    async startGame(jwtPayload, eventId = null) {
+    async startGame(jwtPayload, eventId) {
         try {
             const userId = jwtPayload?.userId;
             if (!userId) {
