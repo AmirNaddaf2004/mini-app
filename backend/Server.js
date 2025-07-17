@@ -154,7 +154,7 @@ class MathGame {
 
 // backend/Server.js -> inside the MathGame class
 
-// Replace your entire startGame function with this corrected version
+// Replace your entire startGame function with this definitive, corrected version
 async startGame(jwtPayload, eventId = null) {
     try {
         const userId = jwtPayload?.userId;
@@ -162,7 +162,7 @@ async startGame(jwtPayload, eventId = null) {
             throw new Error("User ID is missing in JWT payload");
         }
 
-        // Steps 1 & 2: Find user and get all-time top score (Your code is correct here)
+        // --- Step 1 & 2: Get user and their all-time top score ---
         const [user] = await User.findOrCreate({
             where: { telegramId: userId },
             defaults: {
@@ -180,14 +180,14 @@ async startGame(jwtPayload, eventId = null) {
         });
         const top_score = topScoreResult?.top_score || 0;
 
-        // Step 3: Create a new player session for this game
+        // --- Step 3: Create a new player session for this game ---
         const playerId = userId;
         this.players[playerId] = new Player(playerId, jwtPayload);
         this.userToPlayerMap[userId] = playerId;
         
         const player = this.players[playerId];
         
-        // Step 4: Initialize the player's game state
+        // --- Step 4: Initialize the player's game state ---
         player.game_active = true;
         player.time_left = this.total_time;
         player.score = 0;
@@ -200,15 +200,13 @@ async startGame(jwtPayload, eventId = null) {
         player.currentEventId = eventId;
         // ▲▲▲ END OF FIX ▲▲▲
 
-        // Generate the first problem
         const { problem, is_correct } = mathEngine.generate();
         player.current_problem = problem;
         player.current_answer = is_correct;
 
-        // Start the timer
         this.runTimer(playerId);
         
-        // This log will now correctly show the event ID
+        // This single log will now correctly show the event ID after it has been set.
         logger.info(`Game started for user ${userId}. Event ID: ${player.currentEventId || 'Free Play'}`);
 
         return {
