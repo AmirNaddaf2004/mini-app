@@ -151,15 +151,15 @@ class MathGame {
         player.timer = setTimeout(tick, 1000);
     }
 
+
     async startGame(jwtPayload, eventId = null) {
-        // این متد باید async شود
         try {
             const userId = jwtPayload?.userId;
             if (!userId) {
                 throw new Error("User ID is missing in JWT payload");
             }
 
-            // ۱. کاربر را در دیتابیس پیدا یا ایجاد کن
+            // Step 1: Find or create the user (This part is correct)
             const [user, created] = await User.findOrCreate({
                 where: { telegramId: userId },
                 defaults: {
@@ -170,7 +170,7 @@ class MathGame {
                 },
             });
 
-            // ۲. بالاترین امتیاز قبلی کاربر را از دیتابیس بخوان
+            // Step 2: Get the user's all-time top score (This part is correct)
             const topScoreResult = await Score.findOne({
                 where: { userTelegramId: userId },
                 attributes: [
@@ -180,34 +180,39 @@ class MathGame {
             });
             const top_score = topScoreResult.top_score || 0;
 
-            // ۳. یک شناسه بازیکن برای بازی فعلی بساز (در حافظه)
-            const playerId = userId; // می‌توانیم از همان آیدی تلگرام استفاده کنیم
+            // Step 3: Create a new player session in memory (This part is correct)
+            const playerId = userId;
             this.players[playerId] = new Player(playerId, jwtPayload);
             this.userToPlayerMap[userId] = playerId;
 
             const player = this.players[playerId];
 
-            // ۴. مقداردهی اولیه بازیکن با اطلاعات دیتابیس و شروع بازی
+            // Step 4: Initialize the player for the new game
             player.game_active = true;
             player.time_left = this.total_time;
             player.score = 0;
-            player.top_score = top_score; // بالاترین امتیاز از دیتابیس خوانده شد
+            player.top_score = top_score;
             player.should_stop = false;
             player.last_activity = new Date();
 
+            // ▼▼▼ THIS IS THE FIX ▼▼▼
+            // We must explicitly set the currentEventId on the player object
+            // This ensures the correct eventId is stored for the entire game session.
             player.currentEventId = eventId;
-            logger.info(
-                `Game started for user ${userId}. Event ID: ${
-                    eventId || "Free Play"
-                }`
-            );
+            // ▲▲▲ END OF FIX ▲▲▲
 
             const { problem, is_correct } = mathEngine.generate();
             player.current_problem = problem;
             player.current_answer = is_correct;
 
             this.runTimer(playerId);
-            logger.info(`Game started for user ${userId}`);
+
+            // Corrected log message to use the value we just set
+            logger.info(
+                `Game started for user ${userId}. Event ID: ${
+                    player.currentEventId || "Free Play"
+                }`
+            );
 
             return {
                 status: "success",
@@ -215,7 +220,7 @@ class MathGame {
                 problem: problem,
                 time_left: player.time_left,
                 score: player.score,
-                top_score: player.top_score, // ارسال بالاترین امتیاز به فرانت‌اند
+                top_score: player.top_score,
                 game_active: true,
                 user: user.toJSON(),
             };
@@ -227,7 +232,6 @@ class MathGame {
             };
         }
     }
-
     async checkAnswer(userId, userAnswer) {
         try {
             const playerId = this.userToPlayerMap[userId];
@@ -463,7 +467,7 @@ app.get("/api/leaderboard", async (req, res) => {
 
         // ساخت شرط فیلتر به صورت داینامیک
         const whereCondition = {};
-        if (eventId && eventId !== 'null' && eventId !== 'undefined') {
+        if (eventId && eventId !== "null" && eventId !== "undefined") {
             // اگر شناسه رویداد وجود داشت، بر اساس آن فیلتر کن
             whereCondition.eventId = eventId;
         } else {
@@ -494,7 +498,7 @@ app.get("/api/leaderboard", async (req, res) => {
                 meta: { total: 0, limit, offset, has_more: false },
             });
         }
-        
+
         // مرحله ۲ و ۳ بدون تغییر باقی می‌مانند
         const userIds = topScores.map((s) => s.userTelegramId);
         const users = await User.findAll({
