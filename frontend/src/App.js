@@ -35,6 +35,7 @@ function App() {
         return saved ? JSON.parse(saved) : null;
     });
     const [gameActive, setGameActive] = useState(false);
+    const [leaderboardEventId, setLeaderboardEventId] = useState(null);
 
     const timerId = useRef(null);
     const abortControllerRef = useRef(null);
@@ -48,10 +49,11 @@ function App() {
     }, []);
 
     const handleGameOver = useCallback(
-        (finalScore) => {
+        (finalScore, eventId) => {
             clearResources();
             setProblem(null);
             setFinalScore(finalScore);
+            setLeaderboardEventId(eventId); // Set the eventId for the leaderboard
             setView("board");
             setLeaderboardKey(Date.now());
             setGameActive(false);
@@ -394,9 +396,10 @@ function App() {
                     onReplay={() => setView("lobby")}
                     onHome={() => setView("lobby")}
                     userData={userData}
+                    eventId={leaderboardEventId} // Pass the new prop
                 />
             ),
-        [view, leaderboardKey, finalScore, userData]
+        [view, leaderboardKey, finalScore, userData, leaderboardEventId]
     );
 
     return (

@@ -108,14 +108,16 @@ class MathGame {
     }
 
     // backend/Server.js -> داخل کلاس MathGame
+    // backend/Server.js -> inside MathGame class
 
+    // Replace the entire runTimer function with this corrected version
     runTimer(playerId) {
         const player = this.players[playerId];
         if (!player) return;
 
         player.should_stop = false;
 
-        const tick = async () => {
+        const tick = () => {
             if (!player || player.should_stop || !player.game_active) {
                 return;
             }
@@ -125,25 +127,20 @@ class MathGame {
 
             if (player.time_left <= 0) {
                 player.game_active = false;
+                logger.info(
+                    `Player ${playerId} game over - time expired. Triggering final check...`
+                );
 
-                if (player.score > 0) {
-                    // ▼▼▼ Use the stored eventId from the player's session ▼▼▼
-                    await Score.create({
-                        score: player.score,
-                        userTelegramId: userId,
-                        eventId: player.currentEventId, // This can be a UUID or null
-                    });
-                    logger.info(
-                        `Saved final score ${
-                            player.score
-                        } for user ${userId} in event ${
-                            player.currentEventId || "Free Play"
-                        }`
+                // ▼▼▼ THIS IS THE FIX ▼▼▼
+                // We get the userId from the player object's jwtPayload.
+                if (player.jwtPayload && player.jwtPayload.userId) {
+                    this.checkAnswer(player.jwtPayload.userId, null); // Pass null as the answer
+                } else {
+                    logger.error(
+                        `Could not trigger game over for player ${playerId} because jwtPayload is missing.`
                     );
-                    // ▲▲▲ End of change ▲▲▲
                 }
-
-                this.checkAnswer(player.jwtPayload.userId, null); // ارسال null به عنوان پاسخ
+                // ▲▲▲ END OF FIX ▲▲▲
 
                 return;
             }
@@ -249,6 +246,7 @@ class MathGame {
                     status: "game_over",
                     final_score: player.score,
                     top_score: player.top_score,
+                    eventId: player.currentEventId, // <-- Add this line
                 };
             }
 
@@ -460,8 +458,24 @@ app.get("/api/leaderboard", async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
 
-        // مرحله ۱: بالاترین امتیاز را برای هر کاربر پیدا کن
+        // ▼▼▼ این تنها بخش اضافه شده به کد شماست ▼▼▼
+        const { eventId } = req.query; // دریافت شناسه رویداد از فرانت‌اند
+
+        // ساخت شرط فیلتر به صورت داینامیک
+        const whereCondition = {};
+        if (eventId && eventId !== 'null' && eventId !== 'undefined') {
+            // اگر شناسه رویداد وجود داشت، بر اساس آن فیلتر کن
+            whereCondition.eventId = eventId;
+        } else {
+            // در غیر این صورت، فقط نتایج بازی آزاد را نشان بده (جایی که eventId برابر با NULL است)
+            whereCondition.eventId = null;
+        }
+        logger.info(`Fetching leaderboard with condition:`, whereCondition);
+        // ▲▲▲ پایان بخش اضافه شده ▲▲▲
+
+        // مرحله ۱: بالاترین امتیاز را برای هر کاربر با توجه به شرط جدید پیدا کن
         const topScores = await Score.findAll({
+            where: whereCondition, // <--- اعمال فیلتر در اینجا
             attributes: [
                 "userTelegramId",
                 [sequelize.fn("MAX", sequelize.col("score")), "max_score"],
@@ -470,7 +484,7 @@ app.get("/api/leaderboard", async (req, res) => {
             order: [[sequelize.fn("MAX", sequelize.col("score")), "DESC"]],
             limit: limit,
             offset: offset,
-            raw: true, // نتیجه را به صورت یک آرایه ساده برمی‌گرداند
+            raw: true,
         });
 
         if (topScores.length === 0) {
@@ -480,37 +494,34 @@ app.get("/api/leaderboard", async (req, res) => {
                 meta: { total: 0, limit, offset, has_more: false },
             });
         }
-
+        
+        // مرحله ۲ و ۳ بدون تغییر باقی می‌مانند
         const userIds = topScores.map((s) => s.userTelegramId);
-
-        // مرحله ۲: اطلاعات کامل کاربران برنده را بر اساس ID هایی که پیدا کردیم، واکشی کن
         const users = await User.findAll({
-            where: {
-                telegramId: userIds,
-            },
+            where: { telegramId: userIds },
             raw: true,
         });
 
-        // یک مپ برای دسترسی سریع به اطلاعات هر کاربر بساز
         const userMap = users.reduce((map, user) => {
             map[user.telegramId] = user;
             return map;
         }, {});
 
-        // مرحله ۳: نتایج دو مرحله را با هم ترکیب کن تا لیدربرد نهایی ساخته شود
         const leaderboard = topScores.map((scoreEntry) => {
             const user = userMap[scoreEntry.userTelegramId];
             return {
-                telegramId: user.telegramId,
-                username: user.username,
-                firstName: user.firstName,
-                photo_url: user.photo_url,
+                // با اضافه کردن ? جلوی user از بروز خطا در صورت نبودن کاربر جلوگیری می‌کنیم
+                telegramId: user?.telegramId,
+                username: user?.username,
+                firstName: user?.firstName,
+                photo_url: user?.photo_url,
                 score: scoreEntry.max_score,
             };
         });
 
-        // شمارش کل بازیکنان دارای امتیاز برای صفحه‌بندی (Pagination)
+        // شمارش کل بازیکنان با توجه به شرط جدید
         const totalCount = await Score.count({
+            where: whereCondition, // <--- اعمال فیلتر در اینجا
             distinct: true,
             col: "userTelegramId",
         });
