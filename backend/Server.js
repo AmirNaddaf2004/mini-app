@@ -152,86 +152,84 @@ class MathGame {
     }
 
 
-    async startGame(jwtPayload, eventId = null) {
-        try {
-            const userId = jwtPayload?.userId;
-            if (!userId) {
-                throw new Error("User ID is missing in JWT payload");
-            }
+// backend/Server.js -> inside the MathGame class
 
-            // Step 1: Find or create the user (This part is correct)
-            const [user, created] = await User.findOrCreate({
-                where: { telegramId: userId },
-                defaults: {
-                    firstName: jwtPayload.firstName,
-                    lastName: jwtPayload.lastName,
-                    username: jwtPayload.username,
-                    photo_url: jwtPayload.photo_url,
-                },
-            });
-
-            // Step 2: Get the user's all-time top score (This part is correct)
-            const topScoreResult = await Score.findOne({
-                where: { userTelegramId: userId },
-                attributes: [
-                    [sequelize.fn("max", sequelize.col("score")), "top_score"],
-                ],
-                raw: true,
-            });
-            const top_score = topScoreResult.top_score || 0;
-
-            // Step 3: Create a new player session in memory (This part is correct)
-            const playerId = userId;
-            this.players[playerId] = new Player(playerId, jwtPayload);
-            this.userToPlayerMap[userId] = playerId;
-
-            const player = this.players[playerId];
-
-            // Step 4: Initialize the player for the new game
-            player.game_active = true;
-            player.time_left = this.total_time;
-            player.score = 0;
-            player.top_score = top_score;
-            player.should_stop = false;
-            player.last_activity = new Date();
-
-            // ▼▼▼ THIS IS THE FIX ▼▼▼
-            // We must explicitly set the currentEventId on the player object
-            // This ensures the correct eventId is stored for the entire game session.
-            player.currentEventId = eventId;
-            // ▲▲▲ END OF FIX ▲▲▲
-
-            const { problem, is_correct } = mathEngine.generate();
-            player.current_problem = problem;
-            player.current_answer = is_correct;
-
-            this.runTimer(playerId);
-
-            // Corrected log message to use the value we just set
-            logger.info(
-                `Game started for user ${userId}. Event ID: ${
-                    player.currentEventId || "Free Play"
-                }`
-            );
-
-            return {
-                status: "success",
-                player_id: playerId,
-                problem: problem,
-                time_left: player.time_left,
-                score: player.score,
-                top_score: player.top_score,
-                game_active: true,
-                user: user.toJSON(),
-            };
-        } catch (e) {
-            logger.error(`Start game error: ${e.message}`, { stack: e.stack });
-            return {
-                status: "error",
-                message: "Failed to start game",
-            };
+// Replace your entire startGame function with this corrected version
+async startGame(jwtPayload, eventId = null) {
+    try {
+        const userId = jwtPayload?.userId;
+        if (!userId) {
+            throw new Error("User ID is missing in JWT payload");
         }
+
+        // Steps 1 & 2: Find user and get all-time top score (Your code is correct here)
+        const [user] = await User.findOrCreate({
+            where: { telegramId: userId },
+            defaults: {
+                firstName: jwtPayload.firstName,
+                lastName: jwtPayload.lastName,
+                username: jwtPayload.username,
+                photo_url: jwtPayload.photo_url,
+            },
+        });
+
+        const topScoreResult = await Score.findOne({
+            where: { userTelegramId: userId },
+            attributes: [[sequelize.fn("max", sequelize.col("score")), "top_score"]],
+            raw: true,
+        });
+        const top_score = topScoreResult?.top_score || 0;
+
+        // Step 3: Create a new player session for this game
+        const playerId = userId;
+        this.players[playerId] = new Player(playerId, jwtPayload);
+        this.userToPlayerMap[userId] = playerId;
+        
+        const player = this.players[playerId];
+        
+        // Step 4: Initialize the player's game state
+        player.game_active = true;
+        player.time_left = this.total_time;
+        player.score = 0;
+        player.top_score = top_score; // Set the all-time top score
+        player.last_activity = new Date();
+
+        // ▼▼▼ THIS IS THE FINAL, CRITICAL FIX ▼▼▼
+        // Explicitly set the eventId for the CURRENT game session on the player object.
+        // This ensures that when the game ends, we know which event the score belongs to.
+        player.currentEventId = eventId;
+        // ▲▲▲ END OF FIX ▲▲▲
+
+        // Generate the first problem
+        const { problem, is_correct } = mathEngine.generate();
+        player.current_problem = problem;
+        player.current_answer = is_correct;
+
+        // Start the timer
+        this.runTimer(playerId);
+        
+        // This log will now correctly show the event ID
+        logger.info(`Game started for user ${userId}. Event ID: ${player.currentEventId || 'Free Play'}`);
+
+        return {
+            status: "success",
+            player_id: playerId,
+            problem: problem,
+            time_left: player.time_left,
+            score: player.score,
+            top_score: player.top_score,
+            game_active: true,
+            user: user.toJSON(),
+        };
+    } catch (e) {
+        logger.error(`Start game error: ${e.message}`, { stack: e.stack });
+        return {
+            status: "error",
+            message: "Failed to start game",
+        };
     }
+}
+    
     async checkAnswer(userId, userAnswer) {
         try {
             const playerId = this.userToPlayerMap[userId];
