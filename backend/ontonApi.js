@@ -24,7 +24,7 @@ async function rewardUser(userTelegramId) {
     const headers = {
         'Content-Type': 'application/json',
         'accept': 'application/json',
-        'api-key': API_KEY,
+        'api_key': API_KEY,
     };
 
     // 2. حالا که متغیرها تعریف شده‌اند، آن‌ها را لاگ می‌کنیم
