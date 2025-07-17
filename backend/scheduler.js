@@ -4,19 +4,32 @@ const cron = require('node-cron');
 const logger = require('./logger');
 const { findAndRewardTopPlayers } = require('./reward-top-players');
 
-logger.info('Scheduler initialized. Waiting for scheduled tasks.');
+logger.info('Scheduler initialized.');
 
-// مثال: اجرای اسکریپت در ساعت ۲۳:۵۹ روز ۱۸ جولای ۲۰۲۵
-// برای تنظیم زمان رویداد خودتان، این رشته را تغییر دهید
-// فرمت: 'دقیقه ساعت روز ماه روز-هفته'
-const EVENT_END_TIME = '59 23 18 7 *'; // 23:59 on July 18th. The star means any day of the week.
+// A list of all your events and their end times
+const events = [
+    {
+        id: 'fd426c01-b8fd-4878-9b49-5b2435fb92aa', // Main Tournament
+        endTime: '59 23 20 7 *' // 23:59 on July 20th
+    },
+    {
+        id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', // Weekend Challenge
+        endTime: '0 22 22 7 *' // 22:00 on July 22nd
+    }
+];
 
-cron.schedule(EVENT_END_TIME, () => {
-    logger.info(`Scheduled task triggered at ${new Date()}. Running findAndRewardTopPlayers...`);
-    findAndRewardTopPlayers();
-}, {
-    scheduled: true,
-    timezone: "Asia/Tehran" // منطقه زمانی خود را تنظیم کنید
+// Loop through the events and schedule a task for each one
+events.forEach(event => {
+    if (cron.validate(event.endTime)) {
+        cron.schedule(event.endTime, () => {
+            logger.info(`Event ${event.id} has ended. Triggering reward script.`);
+            findAndRewardTopPlayers(event.id);
+        }, {
+            scheduled: true,
+            timezone: "Asia/Tehran"
+        });
+        logger.info(`Reward task for event ${event.id} has been scheduled to run at ${event.endTime}`);
+    } else {
+        logger.error(`Invalid cron time format for event ${event.id}: ${event.endTime}`);
+    }
 });
-
-logger.info(`Task scheduled to run at: ${EVENT_END_TIME} (Timezone: Asia/Tehran)`);

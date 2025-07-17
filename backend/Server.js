@@ -273,10 +273,14 @@ class MathGame {
                     await Score.create({
                         score: player.score,
                         userTelegramId: userId,
-                        eventId: process.env.ONTON_EVENT_UUID, // شناسه رویداد از فایل .env خوانده می‌شود
+                        eventId: player.currentEventId, // This can be a UUID or null
                     });
                     logger.info(
-                        `Saved final score ${player.score} for user ${userId} in event ${process.env.ONTON_EVENT_UUID}`
+                        `Saved final score ${
+                            player.score
+                        } for user ${userId} in event ${
+                            player.currentEventId || "Free Play"
+                        }`
                     );
                 }
 

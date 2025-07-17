@@ -4,13 +4,14 @@ import React, {
     useCallback,
     useRef,
     leaderboardContent,
-    useMemo
+    useMemo,
 } from "react";
 import ProblemCard from "./components/ProblemCard";
 import AnswerButtons from "./components/AnswerButtons";
 import TimerCircle from "./components/TimerCircle";
 import Leaderboard from "./components/Leaderboard";
 import DefaultAvatar from "./assets/default-avatar.png";
+import GameLobby from "./components/GameLobby";
 
 const ROUND_TIME = 40;
 const API_BASE = "https://momis.studio/api";
@@ -99,7 +100,7 @@ function App() {
             localStorage.setItem("jwtToken", data.token);
             localStorage.setItem("userData", JSON.stringify(data.user));
             setIsAuthenticated(true);
-            setView("home");
+            setView("lobby");
         } catch (error) {
             console.error("Authentication error:", error);
             setError(error.message);
@@ -189,77 +190,75 @@ function App() {
         [clearResources, handleTimeout]
     );
 
-    const startGame = useCallback(async () => {
-        if (!isAuthenticated || !token) {
-            setError("Please authenticate first");
-            setView("auth");
-            return;
-        }
-
-        try {
-            setLoading(true);
-            setError(null);
-            setView("game");
-            setGameActive(true);
-
-            const abortController = new AbortController();
-            abortControllerRef.current = abortController;
-
-            const response = await fetch(`${API_BASE}/start`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                signal: abortController.signal,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(
-                    errorData.message ||
-                        `Request failed with status ${response.status}`
-                );
-            }
-
-            const data = await response.json();
-
-            if (!data || data.status !== "success") {
-                throw new Error(data?.message || "Invalid server response");
-            }
-
-            setProblem(data.problem);
-            startLocalTimer(data.time_left ?? ROUND_TIME);
-            setScore(data.score ?? 0);
-        } catch (err) {
-            if (err.name === "AbortError") {
-                console.log("Request was aborted");
+    // MODIFIED: The `startGame` function now accepts `eventId`
+    const startGame = useCallback(
+        async (eventId) => {
+            // It now takes eventId as an argument
+            if (!isAuthenticated || !token) {
+                setError("Please authenticate first");
+                setView("auth");
                 return;
             }
 
-            console.error("Game start error:", err);
-            setError(
-                err.message.includes("Failed to fetch")
-                    ? "Could not connect to server. Please check your connection."
-                    : err.message
-            );
-            setGameActive(false);
+            try {
+                setLoading(true);
+                setError(null);
+                setGameActive(true);
 
-            if (
-                err.message.includes("token") ||
-                err.message.includes("Unauthorized")
-            ) {
-                setIsAuthenticated(false);
-                setView("auth");
-            } else {
-                setView("home");
+                const abortController = new AbortController();
+                abortControllerRef.current = abortController;
+
+                const response = await fetch(`${API_BASE}/start`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    // Send the eventId (which can be null) in the request body
+                    body: JSON.stringify({ eventId }),
+                    signal: abortController.signal,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(
+                        errorData.message ||
+                            `Request failed with status ${response.status}`
+                    );
+                }
+
+                const data = await response.json();
+
+                if (!data || data.status !== "success") {
+                    throw new Error(data?.message || "Invalid server response");
+                }
+
+                setProblem(data.problem);
+                startLocalTimer(data.time_left ?? ROUND_TIME);
+                setScore(data.score ?? 0);
+                setView("game"); // Set the view to 'game' to start playing
+            } catch (err) {
+                if (err.name === "AbortError") {
+                    console.log("Request was aborted");
+                    return;
+                }
+
+                console.error("Game start error:", err);
+                setError(
+                    err.message.includes("Failed to fetch")
+                        ? "Could not connect to server. Please check your connection."
+                        : err.message
+                );
+                setGameActive(false);
+                setView("lobby"); // On error, go back to the lobby, not 'home'
+            } finally {
+                if (!abortControllerRef.current?.signal.aborted) {
+                    setLoading(false);
+                }
             }
-        } finally {
-            if (!abortControllerRef.current?.signal.aborted) {
-                setLoading(false);
-            }
-        }
-    }, [startLocalTimer, isAuthenticated, token]);
+        },
+        [startLocalTimer, isAuthenticated, token]
+    );
 
     const handleImageError = useCallback((e) => {
         if (e.target.src !== DefaultAvatar) {
@@ -272,7 +271,7 @@ function App() {
         const initAuth = async () => {
             if (token && userData) {
                 setIsAuthenticated(true);
-                setView("home");
+                setView("lobby");
                 setAuthLoading(false);
             } else {
                 await authenticateUser();
@@ -328,53 +327,12 @@ function App() {
         );
     }, [view, authLoading, error, authenticateUser]);
 
-    const homeContent = useMemo(() => {
-        if (view !== "home") return null;
+    // NEW: This content will render the Game Lobby
+    const lobbyContent = useMemo(() => {
+        if (view !== "lobby") return null;
 
-        return (
-            <div className="flex flex-col items-center gap-6 w-full max-w-md">
-                {userData && (
-                    <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl w-full">
-                        <img
-                            src={userData.photo_url || DefaultAvatar}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full"
-                            onError={handleImageError}
-                        />
-                        <div>
-                            <h2 className="font-bold text-lg">
-                                {userData.first_name} {userData.last_name}
-                            </h2>
-                            <p className="text-sm opacity-80">
-                                @{userData.username}
-                            </p>
-                        </div>
-                        <button
-                            onClick={handleLogout}
-                            className="ml-auto text-sm bg-red-500/20 px-3 py-1 rounded-lg hover:bg-red-500/30"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                )}
-
-                <h1 className="text-3xl font-bold">Math Challenge</h1>
-                <p className="text-center">
-                    Test your math skills in this exciting timed challenge!
-                </p>
-                <button
-                    onClick={startGame}
-                    disabled={loading}
-                    className={`px-8 py-4 bg-white text-indigo-600 rounded-2xl text-2xl font-bold shadow-xl transition-transform ${
-                        loading ? "opacity-50" : "hover:scale-105"
-                    }`}
-                >
-                    {loading ? "Loading..." : "Start Game"}
-                </button>
-            </div>
-        );
-    }, [view, loading, startGame, userData, handleLogout]);
-
+        return <GameLobby onGameStart={startGame} />;
+    }, [view, startGame]);
     // محتوای بازی
     const gameContent = useMemo(() => {
         if (view !== "game") return null;
@@ -405,7 +363,7 @@ function App() {
             </div>
         ) : (
             <button
-                onClick={startGame}
+                onClick={GameLobby}
                 disabled={loading}
                 className={`px-8 py-4 bg-white text-indigo-600 rounded-2xl text-2xl font-bold shadow-xl transition-transform ${
                     loading ? "opacity-50" : "hover:scale-105"
@@ -432,13 +390,13 @@ function App() {
                 <Leaderboard
                     key={leaderboardKey}
                     API_BASE={API_BASE}
-                    onReplay={startGame}
                     finalScore={finalScore}
-                    onHome={() => setView("home")}
-                    userData={userData} 
+                    onReplay={() => setView("lobby")}
+                    onHome={() => setView("lobby")}
+                    userData={userData}
                 />
             ),
-        [view, leaderboardKey, startGame, finalScore, userData]
+        [view, leaderboardKey, finalScore, userData]
     );
 
     return (
@@ -461,7 +419,7 @@ function App() {
             )}
 
             {authContent}
-            {homeContent}
+            {lobbyContent}
             {gameContent}
             {leaderboardContent}
 
