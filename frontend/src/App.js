@@ -223,7 +223,7 @@ const startLocalTimer = useCallback(
         setTimeLeft(prev => {
           const newTime = prev - elapsedSeconds;
           if (newTime <= 0) {
-            handleGameOver(data.final_score);
+            handleGameOver(0);
             return 0;
           }
           return newTime;
