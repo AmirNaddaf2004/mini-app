@@ -58,7 +58,6 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
 
     return (
         <div className="w-full max-w-md mx-auto bg-gray-800 bg-opacity-70 rounded-xl shadow-lg p-6 text-white animate-fade-in">
-            {/* ▼▼▼ PASTE THIS ENTIRE BLOCK ▼▼▼ */}
             {userData && (
                 <div className="flex items-center gap-3 bg-white/10 p-2 rounded-lg mb-6">
                     <img
@@ -84,12 +83,11 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                     </button>
                 </div>
             )}
-            {/* ▲▲▲ END OF BLOCK ▲▲▲ */}
+
             <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">
                 Game Mode
             </h1>
 
-            {/* "Free Play" Button Card */}
             <div className="bg-gray-700 bg-opacity-50 rounded-lg p-4 my-3 transition-transform transform hover:scale-105">
                 <h2 className="text-xl font-bold text-white">Free Play</h2>
                 <p className="text-sm text-gray-300 mt-1 mb-3">
@@ -103,7 +101,6 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                 </button>
             </div>
 
-            {/* A divider to separate free play from events */}
             {events.length > 0 && (
                 <div className="relative flex py-3 items-center">
                     <div className="flex-grow border-t border-gray-600"></div>
@@ -114,7 +111,6 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                 </div>
             )}
 
-            {/* List of Active Events */}
             {events.map((event) => (
                 <div
                     key={event.id}

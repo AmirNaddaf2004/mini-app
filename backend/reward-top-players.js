@@ -5,7 +5,7 @@ const { Score, sequelize } = require('./DataBase/models');
 const { rewardUser } = require('./ontonApi');
 const logger = require('./logger');
 
-const TOP_N_PLAYERS = 10;
+const TOP_N_PLAYERS = 2;
 
 async function findAndRewardTopPlayers(eventId) {
     if (!eventId) {
