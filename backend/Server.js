@@ -45,7 +45,7 @@ class Player {
         this.jwtPayload = jwtPayload; // اطلاعات کاربر از توکن JWT
         this.score = 0;
         this.top_score = 0;
-        this.time_left = 40;
+        this.time_left = 30;
         this.game_active = false;
         this.current_problem = "";
         this.current_answer = null;
@@ -63,7 +63,7 @@ class MathGame {
     constructor() {
         this.players = {}; // playerId -> Player
         this.userToPlayerMap = {}; // userId -> playerId
-        this.total_time = 40;
+        this.total_time = 30;
         this.cleanup_interval = 600000;
         this.startCleanup();
         logger.info("MathGame initialized");

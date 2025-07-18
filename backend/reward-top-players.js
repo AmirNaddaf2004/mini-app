@@ -6,7 +6,7 @@ const { rewardUser } = require('./ontonApi');
 const logger = require('./logger');
 const { sendWinnerMessage, sendConsolationMessage } = require('./bot');
 
-const TOP_N_PLAYERS = 2;
+const TOP_N_PLAYERS = 10;
 
 async function findAndRewardTopPlayers(eventId) {
     if (!eventId) {
