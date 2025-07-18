@@ -530,6 +530,32 @@ app.get("/api/leaderboard", async (req, res) => {
     }
 });
 
+app.get('/api/player-time', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const playerId = gameInstance.userToPlayerMap[userId];
+    
+    if (!playerId || !gameInstance.players[playerId]) {
+      return res.status(404).json({
+        error: 'Player not found',
+      });
+    }
+
+    const player = gameInstance.players[playerId];
+    
+    return res.json({
+      time_left: player.time_left,
+      player_id: playerId,
+      final_score: player.score
+    });
+  } catch (e) {
+    logger.error(`Player time error: ${e.message}`);
+    return res.status(500).json({
+      error: 'Internal server error',
+    });
+  }
+});
+
 app.get("/api/events", (req, res) => {
     // In a real-world scenario, you would fetch these from a database.
     // For now, we use the values from the .env file as the active event.
