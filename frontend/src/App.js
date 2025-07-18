@@ -39,14 +39,22 @@ function App() {
 
     const timerId = useRef(null);
     const abortControllerRef = useRef(null);
+    const webSocketRef = useRef(null); // Ref for WebSocket connection
 
     const clearResources = useCallback(() => {
+        // Clear timer and abort requests
         if (timerId.current) clearInterval(timerId.current);
         if (abortControllerRef.current) abortControllerRef.current.abort();
+        
+        // Close WebSocket connection
+        if (webSocketRef.current) {
+            webSocketRef.current.close();
+            webSocketRef.current = null;
+        }
 
         timerId.current = null;
         abortControllerRef.current = null;
-    }, []);
+    }, [])
 
     const handleGameOver = useCallback(
         (finalScore) => {
@@ -154,7 +162,7 @@ function App() {
             }
         };
     }, [token, handleGameOver]);
-
+    
     const submitAnswer = useCallback(
         async (answer) => {
             if (!problem || loading || !token) return;
