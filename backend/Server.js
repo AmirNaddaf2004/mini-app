@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const WebSocket = require('ws'); // افزودن ماژول WebSocket
 
 const { rewardUser } = require("./ontonApi");
 const logger = require("./logger");
@@ -131,17 +132,28 @@ class MathGame {
             if (player.time_left > 0) {
                 player.timer = setTimeout(tick, 1000);
             } else {
-                // When the server timer reaches zero, it does nothing but log and stop.
-                // It does NOT set game_active to false anymore.
+                // When the server timer reaches zero, send WebSocket event
                 logger.info(
-                    `Player ${playerId} server-side timer has reached zero. The game session will expire.`
+                    `Player ${playerId} server-side timer has reached zero. Sending TIME_EXPIRED event.`
                 );
+                
+                // Send WebSocket event to frontend
+                if (userSockets[player.id]) {
+                    try {
+                        userSockets[player.id].send(JSON.stringify({
+                            type: 'TIME_EXPIRED',
+                            score: player.score
+                        }));
+                        logger.info(`Sent TIME_EXPIRED to player ${player.id}`);
+                    } catch (e) {
+                        logger.error(`Error sending TIME_EXPIRED to player ${player.id}: ${e.message}`);
+                    }
+                }
             }
         };
 
         player.timer = setTimeout(tick, 1000);
     }
-
 
     async startGame(jwtPayload, eventId) {
         try {
@@ -530,32 +542,6 @@ app.get("/api/leaderboard", async (req, res) => {
     }
 });
 
-app.get('/api/player-time', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const playerId = gameInstance.userToPlayerMap[userId];
-    
-    if (!playerId || !gameInstance.players[playerId]) {
-      return res.status(404).json({
-        error: 'Player not found',
-      });
-    }
-
-    const player = gameInstance.players[playerId];
-    
-    return res.json({
-      time_left: player.time_left,
-      player_id: playerId,
-      final_score: player.score
-    });
-  } catch (e) {
-    logger.error(`Player time error: ${e.message}`);
-    return res.status(500).json({
-      error: 'Internal server error',
-    });
-  }
-});
-
 app.get("/api/events", (req, res) => {
     // In a real-world scenario, you would fetch these from a database.
     // For now, we use the values from the .env file as the active event.
@@ -581,7 +567,63 @@ app.get("*", (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
     logger.info(`Allowed CORS origins: ${allowedOrigins.join(", ")}`);
 });
+
+// ایجاد WebSocket Server
+const wss = new WebSocket.Server({ server });
+
+// شیء برای نگاشت کاربر به اتصال WebSocket
+const userSockets = {};
+
+wss.on('connection', (ws, req) => {
+    // استخراج توکن از URL
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const token = url.searchParams.get('token');
+    
+    if (!token) {
+        ws.close();
+        logger.warn('WebSocket connection attempt without token');
+        return;
+    }
+
+    // تأیید توکن
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            ws.close();
+            logger.warn(`Invalid token for WebSocket connection: ${err.message}`);
+            return;
+        }
+
+        const userId = decoded.userId;
+        userSockets[userId] = ws;
+        logger.info(`WebSocket connected for user: ${userId}`);
+
+        ws.on('close', () => {
+            if (userSockets[userId] === ws) {
+                delete userSockets[userId];
+                logger.info(`WebSocket closed for user: ${userId}`);
+            }
+        });
+
+        ws.on('error', (error) => {
+            logger.error(`WebSocket error for user ${userId}: ${error.message}`);
+        });
+    });
+});
+
+// تابع برای ارسال رویداد به کاربر خاص
+function sendEventToUser(userId, event) {
+    const ws = userSockets[userId];
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+            ws.send(JSON.stringify(event));
+            return true;
+        } catch (e) {
+            logger.error(`Error sending event to user ${userId}: ${e.message}`);
+        }
+    }
+    return false;
+}

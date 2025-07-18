@@ -3,7 +3,6 @@ import React, {
     useEffect,
     useCallback,
     useRef,
-    leaderboardContent,
     useMemo,
 } from "react";
 import ProblemCard from "./components/ProblemCard";
@@ -39,10 +38,18 @@ function App() {
 
     const timerId = useRef(null);
     const abortControllerRef = useRef(null);
+    const webSocketRef = useRef(null); // Ref for WebSocket connection
 
     const clearResources = useCallback(() => {
+        // Clear timer and abort requests
         if (timerId.current) clearInterval(timerId.current);
         if (abortControllerRef.current) abortControllerRef.current.abort();
+        
+        // Close WebSocket connection
+        if (webSocketRef.current) {
+            webSocketRef.current.close();
+            webSocketRef.current = null;
+        }
 
         timerId.current = null;
         abortControllerRef.current = null;
@@ -112,6 +119,49 @@ function App() {
         }
     }, []);
 
+    // Connect to WebSocket when authenticated
+    useEffect(() => {
+        if (!token) return;
+
+        // Create WebSocket connection
+        const wsUrl = `wss://momis.studio?token=${token}`;
+        webSocketRef.current = new WebSocket(wsUrl);
+
+        webSocketRef.current.onopen = () => {
+            console.log("WebSocket connected");
+        };
+
+        webSocketRef.current.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("WebSocket message received:", data);
+                
+                if (data.type === "TIME_EXPIRED") {
+                    console.log("Time expired event received");
+                    handleGameOver(data.score);
+                }
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
+            }
+        };
+
+        webSocketRef.current.onerror = (error) => {
+            console.error("WebSocket error:", error);
+        };
+
+        webSocketRef.current.onclose = () => {
+            console.log("WebSocket closed");
+        };
+
+        // Cleanup function
+        return () => {
+            if (webSocketRef.current) {
+                webSocketRef.current.close();
+                webSocketRef.current = null;
+            }
+        };
+    }, [token, handleGameOver]);
+
     const submitAnswer = useCallback(
         async (answer) => {
             if (!problem || loading || !token) return;
@@ -169,77 +219,32 @@ function App() {
         [problem, loading, handleGameOver, token]
     );
 
+    const handleTimeout = useCallback(async () => {
+        await submitAnswer(false);
+    }, [submitAnswer]);
 
-const startLocalTimer = useCallback(
-  (initialTime) => {
-    clearResources();
-    setTimeLeft(initialTime);
+    const startLocalTimer = useCallback(
+        (initialTime) => {
+            clearResources();
+            setTimeLeft(initialTime);
 
-    // افزودن متغیر برای ذخیره زمان آخرین به‌روزرسانی
-    let lastUpdateTime = Date.now();
+            timerId.current = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        handleTimeout();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        },
+        [clearResources, handleTimeout]
+    );
 
-    timerId.current = setInterval(async () => {
-      // محاسبه زمان سپری شده از آخرین به‌روزرسانی
-      const now = Date.now();
-      const elapsedSeconds = Math.floor((now - lastUpdateTime) / 1000);
-      lastUpdateTime = now;
-
-      try {
-        // دریافت زمان واقعی از بک‌اند
-        const response = await fetch(`${API_BASE}/player-time`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to get player time');
-        }
-
-        const data = await response.json();
-        const serverTimeLeft = data.time_left;
-
-        // به‌روزرسانی زمان با مقدار دریافتی از سرور
-        setTimeLeft(prev => {
-          // اگر زمان سرور صفر یا کمتر است
-          if (serverTimeLeft <= 0) {
-            handleGameOver(data.final_score);
-            return 0;
-          }
-          
-          // اگر اختلاف زمانی وجود دارد، از زمان سرور استفاده کن
-          if (Math.abs(prev - serverTimeLeft) > 2) {
-            return serverTimeLeft;
-          }
-          
-          // در غیر این صورت زمان را کاهش بده
-          const newTime = prev - elapsedSeconds;
-          return newTime > 0 ? newTime : 0;
-        });
-      } catch (error) {
-        console.error('Error fetching player time:', error);
-        // Fallback: کاهش زمان به صورت محلی
-        setTimeLeft(prev => {
-          const newTime = prev - elapsedSeconds;
-          if (newTime <= 0) {
-            handleGameOver(0);
-            return 0;
-          }
-          return newTime;
-        });
-      }
-    }, 1000); // هر 1 ثانیه با سرور همگام می‌شود
-  },
-  [clearResources, handleGameOver, token]
-);
-
-    // MODIFIED: The `startGame` function now accepts `eventId`
     const startGame = useCallback(
         async (eventId) => {
-            setCurrentGameEventId(eventId); // شناسه رویداد این دور از بازی را به خاطر بسپار
+            setCurrentGameEventId(eventId);
 
-            // It now takes eventId as an argument
             if (!isAuthenticated || !token) {
                 setError("Please authenticate first");
                 setView("auth");
@@ -260,7 +265,6 @@ const startLocalTimer = useCallback(
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    // Send the eventId (which can be null) in the request body
                     body: JSON.stringify({ eventId }),
                     signal: abortController.signal,
                 });
@@ -282,7 +286,7 @@ const startLocalTimer = useCallback(
                 setProblem(data.problem);
                 startLocalTimer(data.time_left ?? ROUND_TIME);
                 setScore(data.score ?? 0);
-                setView("game"); // Set the view to 'game' to start playing
+                setView("game");
             } catch (err) {
                 if (err.name === "AbortError") {
                     console.log("Request was aborted");
@@ -296,7 +300,7 @@ const startLocalTimer = useCallback(
                         : err.message
                 );
                 setGameActive(false);
-                setView("lobby"); // On error, go back to the lobby, not 'home'
+                setView("lobby");
             } finally {
                 if (!abortControllerRef.current?.signal.aborted) {
                     setLoading(false);
@@ -373,11 +377,9 @@ const startLocalTimer = useCallback(
         );
     }, [view, authLoading, error, authenticateUser]);
 
-    // NEW: This content will render the Game Lobby
     const lobbyContent = useMemo(() => {
         if (view !== "lobby") return null;
 
-        // Pass the necessary user data and functions to the lobby component
         return (
             <GameLobby
                 onGameStart={startGame}
@@ -386,8 +388,8 @@ const startLocalTimer = useCallback(
                 onImageError={handleImageError}
             />
         );
-    }, [view, startGame]);
-    // محتوای بازی
+    }, [view, startGame, userData, handleLogout, handleImageError]);
+
     const gameContent = useMemo(() => {
         if (view !== "game") return null;
 
@@ -417,7 +419,7 @@ const startLocalTimer = useCallback(
             </div>
         ) : (
             <button
-                onClick={GameLobby}
+                onClick={() => setView("lobby")}
                 disabled={loading}
                 className={`px-8 py-4 bg-white text-indigo-600 rounded-2xl text-2xl font-bold shadow-xl transition-transform ${
                     loading ? "opacity-50" : "hover:scale-105"
@@ -433,9 +435,9 @@ const startLocalTimer = useCallback(
         timeLeft,
         loading,
         submitAnswer,
-        startGame,
         userData,
         gameActive,
+        handleImageError
     ]);
 
     const leaderboardContent = useMemo(
@@ -448,7 +450,7 @@ const startLocalTimer = useCallback(
                     onReplay={() => setView("lobby")}
                     onHome={() => setView("lobby")}
                     userData={userData}
-                    eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
+                    eventId={currentGameEventId}
                 />
             ),
         [view, leaderboardKey, finalScore, userData, currentGameEventId]
@@ -456,7 +458,6 @@ const startLocalTimer = useCallback(
 
     return (
         <div className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-4">
-            {/* نمایش خطا */}
             {error && (
                 <div
                     className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-md shadow-lg z-50 max-w-md text-center animate-fade-in"
@@ -478,7 +479,6 @@ const startLocalTimer = useCallback(
             {gameContent}
             {leaderboardContent}
 
-            {/* لوگوی تیم */}
             <img
                 src={`${process.env.PUBLIC_URL}/teamlogo.png`}
                 alt="Team Logo"
