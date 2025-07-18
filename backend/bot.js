@@ -1,4 +1,5 @@
 // backend/bot.js
+require('dotenv').config(); // <-- This line is the definitive fix
 
 const TelegramBot = require('node-telegram-bot-api');
 const logger = require('./logger');
