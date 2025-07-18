@@ -11,6 +11,9 @@ const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
 
 const { User, Score, Reward, sequelize } = require("./DataBase/models");
+const MaxTime = 30
+const RewardTime = 3
+const PenaltyTime = 12
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -45,7 +48,7 @@ class Player {
         this.jwtPayload = jwtPayload; // اطلاعات کاربر از توکن JWT
         this.score = 0;
         this.top_score = 0;
-        this.time_left = 30;
+        this.time_left = MaxTime;
         this.game_active = false;
         this.current_problem = "";
         this.current_answer = null;
@@ -63,7 +66,7 @@ class MathGame {
     constructor() {
         this.players = {}; // playerId -> Player
         this.userToPlayerMap = {}; // userId -> playerId
-        this.total_time = 30;
+        this.total_time = MaxTime;
         this.cleanup_interval = 600000;
         this.startCleanup();
         logger.info("MathGame initialized");
@@ -243,11 +246,11 @@ class MathGame {
 
             if (is_correct) {
                 // منطق اصلی شما: جایزه زمانی برای پاسخ صحیح
-                player.time_left = Math.min(30, player.time_left + 5);
+                player.time_left = Math.min(MaxTime, player.time_left + RewardTime);
                 player.score += 1;
             } else {
                 // منطق اصلی شما: جریمه زمانی برای پاسخ غلط
-                player.time_left = Math.max(0, player.time_left - 10);
+                player.time_left = Math.max(0, player.time_left - PenaltyTime);
             }
 
             // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
