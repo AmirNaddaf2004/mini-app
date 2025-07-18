@@ -14,12 +14,26 @@ const bot = new TelegramBot(token);
 
 // --- Message Sending Functions ---
 // These functions can be safely imported and used by any script.
+// Find and replace this function in backend/bot.js
 
 async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
-    const message = `🏆 *Congratulations, ${userName}!* 🏆\n\nYou are one of the top players!\n\n*Your score:* *${score}*\n\nClick the button below to claim your prize.`;
+    const message = 
+`🏆 *Congratulations, ${userName}!* 🏆
+
+You are one of the top players in the last tournament!
+
+*Your final score:* *${score}*
+
+You have earned a special reward. Click the button below to claim your prize.
+
+---
+*Please note: The tournament has officially ended. New scores will not affect the final results.*`;
+
     const options = {
         parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: [[{ text: '🎁 Claim Your Reward', url: rewardLink }]] }
+        reply_markup: {
+            inline_keyboard: [[{ text: '🎁 Claim Your Reward', url: rewardLink }]]
+        }
     };
     try {
         await bot.sendMessage(telegramId, message, options);
@@ -29,11 +43,23 @@ async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
     }
 }
 
+// Find and replace this function in backend/bot.js
+
 async function sendConsolationMessage(telegramId, userName, topScore) {
-    const message = `👋 Hello, *${userName}*!\n\nThank you for participating. This time you didn't make it to the top 10.\n\n*Your highest score:* *${topScore}*\n\nKeep practicing for the next event!`;
+    const message = 
+`👋 Hello, *${userName}*!
+
+Thank you for participating in our latest tournament. This time you didn't make it to the top 10.
+
+*Your highest score:* *${topScore}*
+
+The tournament has now officially ended. Keep practicing for the next event!`;
+
     const options = {
         parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: [[{ text: '🚀 Play Again!', web_app: { url: 'https://momis.studio' } }]] }
+        reply_markup: {
+            inline_keyboard: [[{ text: '🚀 Play in Free mode and practice!', web_app: { url: 'https://momis.studio' } }]]
+        }
     };
     try {
         await bot.sendMessage(telegramId, message, options);
@@ -42,7 +68,6 @@ async function sendConsolationMessage(telegramId, userName, topScore) {
         logger.error(`Failed to send consolation message to ${telegramId}. Reason: ${error.message}`);
     }
 }
-
 // --- Bot Listening Function ---
 // This function will ONLY be called by our long-running bot process.
 

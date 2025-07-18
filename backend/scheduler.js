@@ -4,7 +4,7 @@ const cron = require('node-cron');
 const logger = require('./logger');
 const { findAndRewardTopPlayers } = require('./reward-top-players');
 
-logger.info('Scheduler initialized.');
+logger.info('Scheduler initialized.'); 
 
 // A list of all your events and their end times
 const events = [
