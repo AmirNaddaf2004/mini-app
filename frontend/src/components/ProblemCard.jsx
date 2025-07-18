@@ -10,8 +10,8 @@ export default function ProblemCard({ text }) {
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="mx-auto mt-6 p-6 bg-white/80 backdrop-blur rounded-2xl shadow-xl text-4xl font-bold text-center text-slate-800"
-    >
+    className="mx-auto mt-6 p-6 bg-white/80 backdrop-blur rounded-2xl shadow-xl text-4xl font-bold text-center text-slate-800"
+    dir="ltr" >
       {text}
     </motion.div>
   );
