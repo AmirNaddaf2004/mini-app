@@ -44,7 +44,7 @@ function generate() {
     }
 
     // صورت سؤال را همیشه «نتیجه = عبارت» برگردانیم
-    const problem = `${result} = ${a} ${op} ${b}`;
+    const problem = `${a} ${op} ${b} = ${result}`;
     return { problem, is_correct };
 }
 
