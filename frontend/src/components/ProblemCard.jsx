@@ -20,7 +20,7 @@ export default function ProblemCard({ text }) {
       // `unicodeBidi: 'bidi-override'` is a powerful rule that forces this direction
       // onto all characters within the element, overriding any default behavior.
       style={{
-        direction: 'ltr',
+        direction: 'rtl',
         unicodeBidi: 'bidi-override'
       }}
       // ▲▲▲ END OF FIX ▲▲▲
