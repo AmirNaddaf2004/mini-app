@@ -228,7 +228,6 @@ const startLocalTimer = useCallback(
             timerId.current = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
-                        handleTimeout();
                         return 0;
                     }
                     return prev - 1;
