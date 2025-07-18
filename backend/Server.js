@@ -107,44 +107,39 @@ class MathGame {
         });
     }
 
-    // backend/Server.js -> داخل کلاس MathGame
-    // backend/Server.js -> inside MathGame class
+    runTimer(playerId) {
+        const player = this.players[playerId];
+        if (!player) return;
 
-    // Replace the entire runTimer function with this corrected version
-// Replace your entire runTimer function with this definitive, corrected version
-// Replace your entire runTimer function with this definitive, corrected version
-runTimer(playerId) {
-    const player = this.players[playerId];
-    if (!player) return;
+        player.should_stop = false;
 
-    player.should_stop = false;
+        const tick = () => {
+            // Stop the timer if the game has been manually stopped or is no longer active
+            if (!player || player.should_stop || !player.game_active) {
+                return;
+            }
 
-    const tick = () => {
-        // Stop the timer if the game has been manually stopped or is no longer active
-        if (!player || player.should_stop || !player.game_active) {
-            return;
-        }
+            player.time_left -= 1;
+            player.last_activity = new Date();
 
-        player.time_left -= 1;
-        player.last_activity = new Date();
+            // The backend timer's only job is to count down. It must not change any game state.
+            // When the frontend's timer hits zero, its API call will trigger the score saving.
+            // This backend timer now only acts as a server-side failsafe.
+            if (player.time_left > 0) {
+                player.timer = setTimeout(tick, 1000);
+            } else {
+                // When the server timer reaches zero, it does nothing but log and stop.
+                // It does NOT set game_active to false anymore.
+                logger.info(
+                    `Player ${playerId} server-side timer has reached zero. The game session will expire.`
+                );
+            }
+        };
 
-        // ▼▼▼ THIS IS THE DEFINITIVE FIX ▼▼▼
-        // The backend timer's only job is to count down. It must not change any game state.
-        // When the frontend's timer hits zero, its API call will trigger the score saving.
-        // This backend timer now only acts as a server-side failsafe.
-        if (player.time_left > 0) {
-            player.timer = setTimeout(tick, 1000);
-        } else {
-            // When the server timer reaches zero, it does nothing but log and stop.
-            // It does NOT set game_active to false anymore.
-            logger.info(`Player ${playerId} server-side timer has reached zero. The game session will expire.`);
-        }
-        // ▲▲▲ END OF FIX ▲▲▲
-    };
+        player.timer = setTimeout(tick, 1000);
+    }
 
-    player.timer = setTimeout(tick, 1000);
-}
-    // Replace your entire startGame function with this definitive, corrected version
+
     async startGame(jwtPayload, eventId) {
         try {
             const userId = jwtPayload?.userId;
@@ -186,11 +181,9 @@ runTimer(playerId) {
             player.top_score = top_score; // Set the all-time top score
             player.last_activity = new Date();
 
-            // ▼▼▼ THIS IS THE FINAL, CRITICAL FIX ▼▼▼
             // Explicitly set the eventId for the CURRENT game session on the player object.
             // This ensures that when the game ends, we know which event the score belongs to.
             player.currentEventId = eventId;
-            // ▲▲▲ END OF FIX ▲▲▲
 
             const { problem, is_correct } = mathEngine.generate();
             player.current_problem = problem;

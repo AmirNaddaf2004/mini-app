@@ -1,9 +1,10 @@
 // backend/reward-top-players.js
 
 require('dotenv').config();
-const { Score, sequelize } = require('./DataBase/models');
+const { Score, User, sequelize } = require('./DataBase/models');
 const { rewardUser } = require('./ontonApi');
 const logger = require('./logger');
+const { sendWinnerMessage, sendConsolationMessage } = require('./bot');
 
 const TOP_N_PLAYERS = 2;
 
@@ -13,54 +14,86 @@ async function findAndRewardTopPlayers(eventId) {
         return;
     }
 
-    logger.info(`Starting reward process for event: ${eventId}`);
+    logger.info(`--- Starting Reward Process for Event: ${eventId} ---`);
 
     try {
-        const topScores = await Score.findAll({
-            where: { eventId: eventId }, // Find scores for the specific event
+        // Step 1: Get ALL unique participants and their highest score for this event
+        const allParticipants = await Score.findAll({
+            where: { eventId: eventId },
             attributes: [
                 'userTelegramId',
                 [sequelize.fn('MAX', sequelize.col('score')), 'max_score']
             ],
             group: ['userTelegramId'],
-            order: [[sequelize.fn('MAX', sequelize.col('score')), 'DESC']],
-            limit: TOP_N_PLAYERS,
             raw: true,
         });
 
-        if (topScores.length === 0) {
-            logger.info(`No scores found for event ${eventId}. No rewards will be sent.`);
+        if (allParticipants.length === 0) {
+            logger.info(`No participants found for event ${eventId}. Ending process.`);
             return;
         }
 
-        logger.info(`Found ${topScores.length} top players in event ${eventId}. Starting to send rewards...`);
+        // Fetch user details for all participants to get their names
+        const allUserIds = allParticipants.map(p => p.userTelegramId);
+        const allUsers = await User.findAll({ where: { telegramId: allUserIds }, raw: true });
+        const userMap = allUsers.reduce((map, user) => {
+            map[user.telegramId] = user;
+            return map;
+        }, {});
 
-        for (const entry of topScores) {
-            const userId = entry.userTelegramId;
-            logger.info(`Processing reward for user ${userId} with top score ${entry.max_score}`);
+        // Step 2: Sort participants by score and identify winners
+        allParticipants.sort((a, b) => b.max_score - a.max_score);
+        const winners = allParticipants.slice(0, TOP_N_PLAYERS);
+        const winnerIds = new Set(winners.map(w => w.userTelegramId));
+
+        logger.info(`Found ${allParticipants.length} total participants. Winners: ${winners.length}.`);
+
+        // Step 3: Process rewards for winners
+        for (const winner of winners) {
+            const userId = winner.userTelegramId;
+            const user = userMap[userId];
+            const userName = user?.firstName || `Player ${userId}`;
+            
+            logger.info(`Processing WINNER: User ${userId} (${userName}) with score ${winner.max_score}`);
             try {
-                // We need to set the correct event_uuid for the API call
-                // Temporarily set the environment variable for rewardUser to use
-                process.env.ONTON_EVENT_UUID = eventId;
-                await rewardUser(userId);
-                logger.info(`SUCCESS: Reward successfully processed for user ${userId} for event ${eventId}.`);
+                process.env.ONTON_EVENT_UUID = eventId; // Set env for the API call
+                const ontonResponse = await rewardUser(userId);
+                const rewardLink = ontonResponse?.data?.reward_link;
+
+                if (rewardLink) {
+                    await sendWinnerMessage(userId, userName, winner.max_score, rewardLink);
+                } else {
+                    logger.error(`Could not get reward link for winner ${userId}.`);
+                }
             } catch (error) {
-                logger.error(`FAILED to process reward for user ${userId} in event ${eventId}. Reason: ${error.message}`);
+                logger.error(`FAILED to process ONTON reward for winner ${userId}. Reason: ${error.message}`);
+            }
+        }
+        
+        // Step 4: Send consolation messages to everyone else
+        for (const participant of allParticipants) {
+            const userId = participant.userTelegramId;
+            // Check if this user is NOT in the winners set
+            if (!winnerIds.has(userId)) {
+                const user = userMap[userId];
+                const userName = user?.firstName || `Player ${userId}`;
+                
+                logger.info(`Processing NON-WINNER: User ${userId} (${userName}) with score ${participant.max_score}`);
+                await sendConsolationMessage(userId, userName, participant.max_score);
             }
         }
 
-        logger.info(`Reward processing finished for event: ${eventId}`);
+        logger.info(`--- Reward Process Finished for Event: ${eventId} ---`);
 
     } catch (error) {
-        logger.error(`A critical error occurred during the reward process for event ${eventId}: ${error.message}`, { stack: error.stack });
+        logger.error(`A critical error occurred during the reward process: ${error.message}`, { stack: error.stack });
     }
 }
 
-// This allows the script to be run from the command line with an argument
+// Allow script to be run from the command line
 if (require.main === module) {
-    const eventIdFromArgs = process.argv[2]; // Get the event ID from the command line
+    const eventIdFromArgs = process.argv[2];
     if (!eventIdFromArgs) {
-        console.error("Please provide an event ID to process.");
         console.log("Usage: node reward-top-players.js <event-id>");
         process.exit(1);
     }
