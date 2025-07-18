@@ -222,68 +222,21 @@ function App() {
 
 
 const startLocalTimer = useCallback(
-  (initialTime) => {
-    clearResources();
-    setTimeLeft(initialTime);
-
-    // افزودن متغیر برای ذخیره زمان آخرین به‌روزرسانی
-    let lastUpdateTime = Date.now();
-
-    timerId.current = setInterval(async () => {
-      // محاسبه زمان سپری شده از آخرین به‌روزرسانی
-      const now = Date.now();
-      const elapsedSeconds = Math.floor((now - lastUpdateTime) / 1000);
-      lastUpdateTime = now;
-
-      try {
-        // دریافت زمان واقعی از بک‌اند
-        const response = await fetch(`${API_BASE}/player-time`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to get player time');
-        }
-
-        const data = await response.json();
-        const serverTimeLeft = data.time_left;
-
-        // به‌روزرسانی زمان با مقدار دریافتی از سرور
-        setTimeLeft(prev => {
-          // اگر زمان سرور صفر یا کمتر است
-          if (serverTimeLeft <= 0) {
-            handleGameOver(data.final_score);
-            return 0;
-          }
-          
-          // اگر اختلاف زمانی وجود دارد، از زمان سرور استفاده کن
-          if (Math.abs(prev - serverTimeLeft) > 2) {
-            return serverTimeLeft;
-          }
-          
-          // در غیر این صورت زمان را کاهش بده
-          const newTime = prev - elapsedSeconds;
-          return newTime > 0 ? newTime : 0;
-        });
-      } catch (error) {
-        console.error('Error fetching player time:', error);
-        // Fallback: کاهش زمان به صورت محلی
-        setTimeLeft(prev => {
-          const newTime = prev - elapsedSeconds;
-          if (newTime <= 0) {
-            handleGameOver(0);
-            return 0;
-          }
-          return newTime;
-        });
-      }
-    }, 1000); // هر 1 ثانیه با سرور همگام می‌شود
-  },
-  [clearResources, handleGameOver, token]
-);
+        (initialTime) => {
+            clearResources();
+            setTimeLeft(initialTime);
+            timerId.current = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        handleTimeout();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        },
+        [clearResources, ]
+    );
 
     // MODIFIED: The `startGame` function now accepts `eventId`
     const startGame = useCallback(
