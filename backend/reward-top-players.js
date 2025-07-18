@@ -1,5 +1,6 @@
 // backend/reward-top-players.js
 
+
 require('dotenv').config();
 const { Score, User, sequelize } = require('./DataBase/models');
 const { rewardUser } = require('./ontonApi');
