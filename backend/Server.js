@@ -243,7 +243,7 @@ class MathGame {
 
             if (is_correct) {
                 // منطق اصلی شما: جایزه زمانی برای پاسخ صحیح
-                player.time_left = Math.min(40, player.time_left + 5);
+                player.time_left = Math.min(30, player.time_left + 5);
                 player.score += 1;
             } else {
                 // منطق اصلی شما: جریمه زمانی برای پاسخ غلط
