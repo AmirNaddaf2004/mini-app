@@ -355,7 +355,7 @@ function App() {
                 onImageError={handleImageError}
             />
         );
-    }, [view, startGame]);
+    }, [view, startGame, userData, handleLogout, handleImageError]);
     // محتوای بازی
     const gameContent = useMemo(() => {
         if (view !== "game") return null;
