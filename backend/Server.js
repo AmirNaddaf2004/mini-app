@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 const { rewardUser } = require("./ontonApi");
 const logger = require("./logger");
 
@@ -233,6 +233,22 @@ class MathGame {
             // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
             player.game_active = false;
 
+            if (player.score > 0) {
+                await Score.create({
+                    score: player.score,
+                    userTelegramId: userId,
+                    eventId: player.currentEventId,
+                });
+                logger.info(
+                    `Saved final score ${
+                        player.score
+                    } for user ${userId} via TIMEOUT in event ${
+                        player.currentEventId || "Free Play"
+                    }`
+                );
+            }
+            // ▲▲▲ END OF FIX ▲▲▲
+
             // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
             player.top_score = Math.max(player.top_score, player.score);
 
@@ -285,7 +301,6 @@ class MathGame {
                 clearTimeout(player.timer);
                 // Then, start it again.
                 this.runTimer(playerId);
-
             } else {
                 // منطق اصلی شما: جریمه زمانی برای پاسخ غلط
                 player.time_left = Math.max(0, player.time_left - PenaltyTime);
@@ -616,38 +631,39 @@ app.get("/api/events", (req, res) => {
 });
 
 // ▼▼▼ THIS IS THE DEFINITIVE FIX - PART 1: BACKEND PROXY ▼▼▼
- app.get("/api/avatar", async (req, res) => {
-     try {
-         const externalUrl = req.query.url;
+app.get("/api/avatar", async (req, res) => {
+    try {
+        const externalUrl = req.query.url;
 
-         // Basic security check: only allow URLs from Telegram's CDN
-         if (!externalUrl || !externalUrl.startsWith('https://t.me/')) {
-             return res.status(400).send('Invalid URL');
-         }
+        // Basic security check: only allow URLs from Telegram's CDN
+        if (!externalUrl || !externalUrl.startsWith("https://t.me/")) {
+            return res.status(400).send("Invalid URL");
+        }
 
-         const response = await fetch(externalUrl);
+        const response = await fetch(externalUrl);
 
-         if (!response.ok) {
-             throw new Error(`Failed to fetch image: ${response.statusText}`);
-         }
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
 
-         // Get the content type from the original response (e.g., 'image/jpeg')
-         const contentType = response.headers.get('content-type');
-         res.setHeader('Content-Type', contentType);
-         
-         // Set caching headers to tell the browser to cache the image for 1 day
-         res.setHeader('Cache-Control', 'public, max-age=86400');
+        // Get the content type from the original response (e.g., 'image/jpeg')
+        const contentType = response.headers.get("content-type");
+        res.setHeader("Content-Type", contentType);
 
-         // Stream the image data directly to the client
-         response.body.pipe(res);
+        // Set caching headers to tell the browser to cache the image for 1 day
+        res.setHeader("Cache-Control", "public, max-age=86400");
 
-     } catch (error) {
-         logger.error(`Avatar proxy error: ${error.message}`);
-         // Redirect to a default avatar in case of an error
-         res.status(404).sendFile(path.join(__dirname, '../frontend/build', 'default-avatar.png'));
-     }
- });
- // ▲▲▲ END OF FIX ▲▲▲
+        // Stream the image data directly to the client
+        response.body.pipe(res);
+    } catch (error) {
+        logger.error(`Avatar proxy error: ${error.message}`);
+        // Redirect to a default avatar in case of an error
+        res.status(404).sendFile(
+            path.join(__dirname, "../frontend/build", "default-avatar.png")
+        );
+    }
+});
+// ▲▲▲ END OF FIX ▲▲▲
 
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
