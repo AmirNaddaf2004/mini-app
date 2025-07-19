@@ -175,8 +175,7 @@ function App() {
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
-                },
-                signal: abortControllerRef.current.signal,
+                }
             });
             if (!response.ok) {
                 const errorData = await response.json();
