@@ -11,9 +11,9 @@ const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
 
 const { User, Score, Reward, sequelize } = require("./DataBase/models");
-const MaxTime = 15
-const RewardTime = 2
-const PenaltyTime = 6
+const MaxTime = 15;
+const RewardTime = 2;
+const PenaltyTime = 6;
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -142,7 +142,6 @@ class MathGame {
         player.timer = setTimeout(tick, 1000);
     }
 
-
     async startGame(jwtPayload, eventId) {
         try {
             const userId = jwtPayload?.userId;
@@ -188,7 +187,7 @@ class MathGame {
             // This ensures that when the game ends, we know which event the score belongs to.
             player.currentEventId = eventId;
 
-            const { problem, is_correct } = mathEngine.generate();
+            const { problem, is_correct } = mathEngine.generate(0);
             player.current_problem = problem;
             player.current_answer = is_correct;
 
@@ -234,16 +233,14 @@ class MathGame {
             // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
             player.game_active = false;
 
-                
             // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
             player.top_score = Math.max(player.top_score, player.score);
 
-        
             return {
-                    status: "game_over",
-                    final_score: player.score,
-                    top_score: player.top_score,
-                    eventId: player.currentEventId, // <-- Add this line
+                status: "game_over",
+                final_score: player.score,
+                top_score: player.top_score,
+                eventId: player.currentEventId, // <-- Add this line
             };
         } catch (e) {
             logger.error(`TimeHandle error: ${e.message}`);
@@ -277,7 +274,10 @@ class MathGame {
 
             if (is_correct) {
                 // منطق اصلی شما: جایزه زمانی برای پاسخ صحیح
-                player.time_left = Math.min(MaxTime, player.time_left + RewardTime);
+                player.time_left = Math.min(
+                    MaxTime,
+                    player.time_left + RewardTime
+                );
                 player.score += 1;
             } else {
                 // منطق اصلی شما: جریمه زمانی برای پاسخ غلط
@@ -316,7 +316,9 @@ class MathGame {
             }
 
             // اگر بازی ادامه دارد، یک سوال جدید تولید کن
-            const { problem, is_correct: answer } = mathEngine.generate();
+            const { problem, is_correct: answer } = mathEngine.generate(
+                player.score
+            );
             player.current_problem = problem;
             player.current_answer = answer;
 
