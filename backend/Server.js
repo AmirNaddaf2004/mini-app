@@ -472,14 +472,6 @@ app.post("/api/answer", authenticateToken, async (req, res) => {
 app.post("/api/timeOut", authenticateToken, async (req, res) => {
     try {
         const user = req.user; // اطلاعات کاربر از توکن
-
-        if (answer === undefined) {
-            return res.status(400).json({
-                status: "error",
-                message: "Answer is required",
-            });
-        }
-
         const result = await gameInstance.timeHandler(user.userId);
 
         res.json(result);
