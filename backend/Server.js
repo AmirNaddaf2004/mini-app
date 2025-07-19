@@ -11,9 +11,9 @@ const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
 
 const { User, Score, Reward, sequelize } = require("./DataBase/models");
-const MaxTime = 30
-const RewardTime = 3
-const PenaltyTime = 12
+const MaxTime = 15
+const RewardTime = 2
+const PenaltyTime = 6
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));

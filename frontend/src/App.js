@@ -13,7 +13,7 @@ import Leaderboard from "./components/Leaderboard";
 import DefaultAvatar from "./assets/default-avatar.png";
 import GameLobby from "./components/GameLobby";
 
-const ROUND_TIME = 30;
+const ROUND_TIME = 15;
 const API_BASE = "https://momis.studio/api";
 
 function App() {
