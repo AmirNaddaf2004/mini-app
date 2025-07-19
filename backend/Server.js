@@ -615,40 +615,6 @@ app.get("/api/events", (req, res) => {
     });
 });
 
-// ▼▼▼ THIS IS THE DEFINITIVE FIX - PART 1: BACKEND PROXY ▼▼▼
- app.get("/api/avatar", async (req, res) => {
-     try {
-         const externalUrl = req.query.url;
-
-         // Basic security check: only allow URLs from Telegram's CDN
-         if (!externalUrl || !externalUrl.startsWith('https://t.me/')) {
-             return res.status(400).send('Invalid URL');
-         }
-
-         const response = await fetch(externalUrl);
-
-         if (!response.ok) {
-             throw new Error(`Failed to fetch image: ${response.statusText}`);
-         }
-
-         // Get the content type from the original response (e.g., 'image/jpeg')
-         const contentType = response.headers.get('content-type');
-         res.setHeader('Content-Type', contentType);
-         
-         // Set caching headers to tell the browser to cache the image for 1 day
-         res.setHeader('Cache-Control', 'public, max-age=86400');
-
-         // Stream the image data directly to the client
-         response.body.pipe(res);
-
-     } catch (error) {
-         logger.error(`Avatar proxy error: ${error.message}`);
-         // Redirect to a default avatar in case of an error
-         res.status(404).sendFile(path.join(__dirname, '../frontend/build', 'default-avatar.png'));
-     }
- });
- // ▲▲▲ END OF FIX ▲▲▲
-
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
 });

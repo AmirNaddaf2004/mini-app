@@ -61,7 +61,8 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
             {userData && (
                 <div className="flex items-center gap-3 bg-white/10 p-2 rounded-lg mb-6">
                     <img
-src={userData.photo_url ? `/api/avatar?url=${encodeURIComponent(userData.photo_url)}` : DefaultAvatar}                        alt="Profile"
+                        src={userData.photo_url || DefaultAvatar}
+                        alt="Profile"
                         className="w-12 h-12 rounded-full border-2 border-gray-500"
                         onError={onImageError}
                     />
