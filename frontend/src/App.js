@@ -46,11 +46,11 @@ function App() {
         if (timerId.current) clearInterval(timerId.current);
         if (abortControllerRef.current) abortControllerRef.current.abort();
         
-        // Close WebSocket connection
-        if (webSocketRef.current) {
-            webSocketRef.current.close();
-            webSocketRef.current = null;
-        }
+        // // Close WebSocket connection
+        // if (webSocketRef.current) {
+        //     webSocketRef.current.close();
+        //     webSocketRef.current = null;
+        // }
 
         timerId.current = null;
         abortControllerRef.current = null;
