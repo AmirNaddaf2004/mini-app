@@ -39,22 +39,14 @@ function App() {
 
     const timerId = useRef(null);
     const abortControllerRef = useRef(null);
-    const webSocketRef = useRef(null); // Ref for WebSocket connection
 
     const clearResources = useCallback(() => {
-        // Clear timer and abort requests
         if (timerId.current) clearInterval(timerId.current);
         if (abortControllerRef.current) abortControllerRef.current.abort();
-        
-        // // Close WebSocket connection
-        // if (webSocketRef.current) {
-        //     webSocketRef.current.close();
-        //     webSocketRef.current = null;
-        // }
 
         timerId.current = null;
         abortControllerRef.current = null;
-    }, [])
+    }, []);
 
     const handleGameOver = useCallback(
         (finalScore) => {
@@ -120,49 +112,6 @@ function App() {
         }
     }, []);
 
-// Connect to WebSocket when authenticated
-    useEffect(() => {
-        if (!token) return;
-
-        // Create WebSocket connection
-        const wsUrl = `wss://momis.studio?token=${token}`;
-        webSocketRef.current = new WebSocket(wsUrl);
-
-        webSocketRef.current.onopen = () => {
-            console.log("WebSocket connected");
-        };
-
-        webSocketRef.current.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log("WebSocket message received:", data);
-                
-                if (data.type === "TIME_EXPIRED") {
-                    console.log("Time expired event received");
-                    handleGameOver(data.score);
-                }
-            } catch (error) {
-                console.error("Error parsing WebSocket message:", error);
-            }
-        };
-
-        webSocketRef.current.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
-        webSocketRef.current.onclose = () => {
-            console.log("WebSocket closed");
-        };
-
-        // Cleanup function
-        // return () => {
-        //     if (webSocketRef.current) {
-        //         webSocketRef.current.close();
-        //         webSocketRef.current = null;
-        //     }
-        // };
-    }, [token, handleGameOver]);
-    
     const submitAnswer = useCallback(
         async (answer) => {
             if (!problem || loading || !token) return;
@@ -220,21 +169,41 @@ function App() {
         [problem, loading, handleGameOver, token]
     );
 
+    const handleTimeout = useCallback(async () => {
+            const response = await fetch(`${API_BASE}/timeOut`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                signal: abortControllerRef.current.signal,
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(
+                    errorData.message || "Failed to submit answer"
+                );
+            }
+            const data = await response.json();
+            handleGameOver(data.final_score);
+    }, [handleGameOver]);
 
-const startLocalTimer = useCallback(
+    const startLocalTimer = useCallback(
         (initialTime) => {
             clearResources();
             setTimeLeft(initialTime);
+
             timerId.current = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
+                        handleTimeout();
                         return 0;
                     }
                     return prev - 1;
                 });
             }, 1000);
         },
-        [clearResources, ]
+        [clearResources, handleTimeout]
     );
 
     // MODIFIED: The `startGame` function now accepts `eventId`

@@ -1,7 +1,6 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const WebSocket = require('ws'); // افزودن ماژول WebSocket
 
 const { rewardUser } = require("./ontonApi");
 const logger = require("./logger");
@@ -132,52 +131,17 @@ class MathGame {
             if (player.time_left > 0) {
                 player.timer = setTimeout(tick, 1000);
             } else {
-                // When the server timer reaches zero, send WebSocket event
+                // When the server timer reaches zero, it does nothing but log and stop.
+                // It does NOT set game_active to false anymore.
                 logger.info(
-                    `Player ${playerId} server-side timer has reached zero. Sending TIME_EXPIRED event.`
+                    `Player ${playerId} server-side timer has reached zero. The game session will expire.`
                 );
-                
-                // Send WebSocket event to frontend
-                if (userSockets[player.id]) {
-                    try {
-                        userSockets[player.id].send(JSON.stringify({
-                            type: 'TIME_EXPIRED',
-                            score: player.score
-                        }));
-                        player.game_active = false;
-                        this.saveScore(player);
-
-                        // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
-                        player.top_score = Math.max(player.top_score, player.score);
-                        logger.info(`Sent TIME_EXPIRED to player ${player.id}`);
-                    } catch (e) {
-                        logger.error(`Error sending TIME_EXPIRED to player ${player.id}: ${e.message}`);
-                    }
-                }
             }
         };
 
         player.timer = setTimeout(tick, 1000);
     }
 
-    async saveScore(player){
-        // حالا که بازی تمام شده، امتیاز نهایی را در دیتابیس ثبت می‌کنیم
-        if (player.score > 0) {
-            // ثبت امتیاز به همراه شناسه رویداد فعلی
-            await Score.create({
-                score: player.score,
-                userTelegramId: userId,
-                eventId: player.currentEventId, // This can be a UUID or null
-            });
-            logger.info(
-                `Saved final score ${
-                    player.score
-                } for user ${userId} in event ${
-                    player.currentEventId || "Free Play"
-                }`
-            );
-        }
-    }
 
     async startGame(jwtPayload, eventId) {
         try {
@@ -253,6 +217,37 @@ class MathGame {
                 status: "error",
                 message: "Failed to start game",
             };
+        }
+    }
+
+    async timeHandler(userId) {
+        try {
+            const playerId = this.userToPlayerMap[userId];
+            if (!playerId || !this.players[playerId]) {
+                return {
+                    status: "error",
+                    message: "Player not found. Start a new game.",
+                };
+            }
+
+            const player = this.players[playerId];
+            // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
+            player.game_active = false;
+
+                
+            // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
+            player.top_score = Math.max(player.top_score, player.score);
+
+        
+            return {
+                    status: "game_over",
+                    final_score: player.score,
+                    top_score: player.top_score,
+                    eventId: player.currentEventId, // <-- Add this line
+            };
+        } catch (e) {
+            logger.error(`TimeHandle error: ${e.message}`);
+            return { status: "error", message: e.message };
         }
     }
 
@@ -474,6 +469,35 @@ app.post("/api/answer", authenticateToken, async (req, res) => {
     }
 });
 
+app.post("/api/timeOut", authenticateToken, async (req, res) => {
+    try {
+        const user = req.user; // اطلاعات کاربر از توکن
+
+        if (answer === undefined) {
+            return res.status(400).json({
+                status: "error",
+                message: "Answer is required",
+            });
+        }
+
+        const result = await gameInstance.timeHandler(user.userId);
+
+        res.json(result);
+    } catch (e) {
+        logger.error(`API answer error: ${e.message}`, {
+            stack: e.stack,
+        });
+
+        res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+            ...(process.env.NODE_ENV === "development" && {
+                details: e.message,
+            }),
+        });
+    }
+});
+
 app.get("/api/leaderboard", async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
@@ -591,63 +615,7 @@ app.get("*", (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
     logger.info(`Allowed CORS origins: ${allowedOrigins.join(", ")}`);
 });
-
-// ایجاد WebSocket Server
-const wss = new WebSocket.Server({ server });
-
-// شیء برای نگاشت کاربر به اتصال WebSocket
-const userSockets = {};
-
-wss.on('connection', (ws, req) => {
-    // استخراج توکن از URL
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const token = url.searchParams.get('token');
-    
-    if (!token) {
-        ws.close();
-        logger.warn('WebSocket connection attempt without token');
-        return;
-    }
-
-    // تأیید توکن
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            ws.close();
-            logger.warn(`Invalid token for WebSocket connection: ${err.message}`);
-            return;
-        }
-
-        const userId = decoded.userId;
-        userSockets[userId] = ws;
-        logger.info(`WebSocket connected for user: ${userId}`);
-
-        ws.on('close', () => {
-            if (userSockets[userId] === ws) {
-                delete userSockets[userId];
-                logger.info(`WebSocket closed for user: ${userId}`);
-            }
-        });
-
-        ws.on('error', (error) => {
-            logger.error(`WebSocket error for user ${userId}: ${error.message}`);
-        });
-    });
-});
-
-// تابع برای ارسال رویداد به کاربر خاص
-function sendEventToUser(userId, event) {
-    const ws = userSockets[userId];
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        try {
-            ws.send(JSON.stringify(event));
-            return true;
-        } catch (e) {
-            logger.error(`Error sending event to user ${userId}: ${e.message}`);
-        }
-    }
-    return false;
-}
