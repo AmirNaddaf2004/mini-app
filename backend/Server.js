@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-
+const fetch = require('node-fetch');
 const { rewardUser } = require("./ontonApi");
 const logger = require("./logger");
 
@@ -280,13 +280,12 @@ class MathGame {
                 );
                 player.score += 1;
 
-    // ▼▼▼ THIS IS THE DEFINITIVE FIX ▼▼▼
-    // We must restart the backend timer to keep it in sync with the new time.
-    // First, stop the old timer.
-    clearTimeout(player.timer);
-    // Then, start it again.
-    this.runTimer(playerId);
-    // ▲▲▲ END OF FIX ▲▲▲
+                // We must restart the backend timer to keep it in sync with the new time.
+                // First, stop the old timer.
+                clearTimeout(player.timer);
+                // Then, start it again.
+                this.runTimer(playerId);
+
             } else {
                 // منطق اصلی شما: جریمه زمانی برای پاسخ غلط
                 player.time_left = Math.max(0, player.time_left - PenaltyTime);
@@ -321,9 +320,8 @@ class MathGame {
                     final_score: player.score,
                     top_score: player.top_score,
                 };
-            }else{
-                console.log(player.time_left, "looooooooooolo\n"
-                )
+            } else {
+                console.log(player.time_left, "looooooooooolo\n");
             }
 
             // اگر بازی ادامه دارد، یک سوال جدید تولید کن
@@ -616,6 +614,41 @@ app.get("/api/events", (req, res) => {
         events: activeEvents,
     });
 });
+
+// ▼▼▼ THIS IS THE DEFINITIVE FIX - PART 1: BACKEND PROXY ▼▼▼
+ app.get("/api/avatar", async (req, res) => {
+     try {
+         const externalUrl = req.query.url;
+
+         // Basic security check: only allow URLs from Telegram's CDN
+         if (!externalUrl || !externalUrl.startsWith('https://t.me/')) {
+             return res.status(400).send('Invalid URL');
+         }
+
+         const response = await fetch(externalUrl);
+
+         if (!response.ok) {
+             throw new Error(`Failed to fetch image: ${response.statusText}`);
+         }
+
+         // Get the content type from the original response (e.g., 'image/jpeg')
+         const contentType = response.headers.get('content-type');
+         res.setHeader('Content-Type', contentType);
+         
+         // Set caching headers to tell the browser to cache the image for 1 day
+         res.setHeader('Cache-Control', 'public, max-age=86400');
+
+         // Stream the image data directly to the client
+         response.body.pipe(res);
+
+     } catch (error) {
+         logger.error(`Avatar proxy error: ${error.message}`);
+         // Redirect to a default avatar in case of an error
+         res.status(404).sendFile(path.join(__dirname, '../frontend/build', 'default-avatar.png'));
+     }
+ });
+ // ▲▲▲ END OF FIX ▲▲▲
+
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
 });

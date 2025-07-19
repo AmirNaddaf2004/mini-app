@@ -170,21 +170,19 @@ function App() {
     );
 
     const handleTimeout = useCallback(async () => {
-            const response = await fetch(`${API_BASE}/timeOut`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                }
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(
-                    errorData.message || "Failed to submit answer"
-                );
-            }
-            const data = await response.json();
-            handleGameOver(data.final_score);
+        const response = await fetch(`${API_BASE}/timeOut`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to submit answer");
+        }
+        const data = await response.json();
+        handleGameOver(data.final_score);
     }, [handleGameOver]);
 
     const startLocalTimer = useCallback(
@@ -369,7 +367,13 @@ function App() {
                     {userData && (
                         <div className="flex items-center gap-2">
                             <img
-                                src={userData.photo_url || DefaultAvatar}
+                                src={
+                                    userData.photo_url
+                                        ? `/api/avatar?url=${encodeURIComponent(
+                                              userData.photo_url
+                                          )}`
+                                        : DefaultAvatar
+                                }
                                 alt="Profile"
                                 className="w-12 h-12 rounded-full"
                                 onError={handleImageError}
