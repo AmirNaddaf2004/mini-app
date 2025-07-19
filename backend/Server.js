@@ -285,7 +285,7 @@ class MathGame {
             }
 
             // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
-            if (player.time_left < 0) {
+            if (player.time_left <= 0) {
                 player.game_active = false;
 
                 // حالا که بازی تمام شده، امتیاز نهایی را در دیتابیس ثبت می‌کنیم
