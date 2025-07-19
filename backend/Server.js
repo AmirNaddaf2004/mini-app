@@ -144,6 +144,11 @@ class MathGame {
                             type: 'TIME_EXPIRED',
                             score: player.score
                         }));
+                        player.game_active = false;
+                        this.saveScore(player);
+
+                        // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
+                        player.top_score = Math.max(player.top_score, player.score);
                         logger.info(`Sent TIME_EXPIRED to player ${player.id}`);
                     } catch (e) {
                         logger.error(`Error sending TIME_EXPIRED to player ${player.id}: ${e.message}`);
@@ -153,6 +158,25 @@ class MathGame {
         };
 
         player.timer = setTimeout(tick, 1000);
+    }
+
+    async saveScore(player){
+        // حالا که بازی تمام شده، امتیاز نهایی را در دیتابیس ثبت می‌کنیم
+        if (player.score > 0) {
+            // ثبت امتیاز به همراه شناسه رویداد فعلی
+            await Score.create({
+                score: player.score,
+                userTelegramId: userId,
+                eventId: player.currentEventId, // This can be a UUID or null
+            });
+            logger.info(
+                `Saved final score ${
+                    player.score
+                } for user ${userId} in event ${
+                    player.currentEventId || "Free Play"
+                }`
+            );
+        }
     }
 
     async startGame(jwtPayload, eventId) {
