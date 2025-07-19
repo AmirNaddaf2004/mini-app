@@ -128,7 +128,7 @@ class MathGame {
             // The backend timer's only job is to count down. It must not change any game state.
             // When the frontend's timer hits zero, its API call will trigger the score saving.
             // This backend timer now only acts as a server-side failsafe.
-            if (player.time_left > 0) {
+            if (player.time_left >= 0) {
                 player.timer = setTimeout(tick, 1000);
             } else {
                 // When the server timer reaches zero, it does nothing but log and stop.
@@ -319,6 +319,7 @@ class MathGame {
             const { problem, is_correct: answer } = mathEngine.generate(
                 player.score
             );
+
             player.current_problem = problem;
             player.current_answer = answer;
 
