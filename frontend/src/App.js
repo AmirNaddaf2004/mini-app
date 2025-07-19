@@ -155,12 +155,12 @@ function App() {
         };
 
         // Cleanup function
-        return () => {
-            if (webSocketRef.current) {
-                webSocketRef.current.close();
-                webSocketRef.current = null;
-            }
-        };
+        // return () => {
+        //     if (webSocketRef.current) {
+        //         webSocketRef.current.close();
+        //         webSocketRef.current = null;
+        //     }
+        // };
     }, [token, handleGameOver]);
     
     const submitAnswer = useCallback(
