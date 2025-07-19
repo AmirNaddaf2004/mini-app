@@ -10,11 +10,7 @@ logger.info('Scheduler initialized.');
 const events = [
     {
         id: 'fd426c01-b8fd-4878-9b49-5b2435fb92aa', // Main Tournament
-        endTime: '59 23 20 7 *' // 23:59 on July 20th
-    },
-    {
-        id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', // Weekend Challenge
-        endTime: '0 22 22 7 *' // 22:00 on July 22nd
+        endTime: '42 21 19 7 *' // 23:59 on July 20th
     }
 ];
 
