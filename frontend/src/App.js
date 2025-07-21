@@ -14,7 +14,7 @@ import DefaultAvatar from "./assets/default-avatar.png";
 import GameLobby from "./components/GameLobby";
 
 const ROUND_TIME = 15;
-const API_BASE = "https://momis.studio/api";
+const API_BASE = "https://momis.studio/math-battle/api";
 
 function App() {
     const [problem, setProblem] = useState(null);
