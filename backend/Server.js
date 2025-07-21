@@ -20,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const allowedOrigins = [
-    "https://momis.studio/math-battle",
+    "https://momis.studio",
     "https://www.momis.studio",
     "https://web.telegram.org",
 ];
