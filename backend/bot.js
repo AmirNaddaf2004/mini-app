@@ -12,14 +12,23 @@ if (!token) {
 // Create the bot instance WITHOUT starting it
 const bot = new TelegramBot(token);
 
-// --- Game Short Name ---
-// نام کوتاهی که در BotFather ثبت کرده‌اید
-const MATH_BATTLE_SHORT_NAME = 'math_battle';
-
 // --- Message Sending Functions ---
+// These functions can be safely imported and used by any script.
+// Find and replace this function in backend/bot.js
+
 async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
-    // This function remains unchanged
-    const message = `🏆 *Congratulations, ${userName}!* 🏆...`;
+    const message = 
+`🏆 *Congratulations, ${userName}!* 🏆
+
+You are one of the top players in the last tournament!
+
+*Your final score:* *${score}*
+
+You have earned a special reward. Click the button below to claim your prize.
+
+---
+*Please note: The tournament has officially ended. New scores will not affect the final results.*`;
+
     const options = {
         parse_mode: 'Markdown',
         reply_markup: {
@@ -34,8 +43,10 @@ async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
     }
 }
 
+// Find and replace this function in backend/bot.js
+
 async function sendConsolationMessage(telegramId, userName, topScore) {
-    const message =
+    const message = 
 `👋 Hello, *${userName}*!
 
 Thank you for participating in our latest tournament. This time you didn't make it to the top 10.
@@ -47,11 +58,7 @@ The tournament has now officially ended. Keep practicing for the next event!`;
     const options = {
         parse_mode: 'Markdown',
         reply_markup: {
-            inline_keyboard: [[{
-                text: '🚀 Play Math Battle!',
-                // این دکمه حالا یک دکمه بازی است
-                callback_game: {}
-            }]]
+            inline_keyboard: [[{ text: '🚀 Play in Free mode and practice!', web_app: { url: 'https://momis.studio/math-battle' } }]]
         }
     };
     try {
@@ -61,48 +68,26 @@ The tournament has now officially ended. Keep practicing for the next event!`;
         logger.error(`Failed to send consolation message to ${telegramId}. Reason: ${error.message}`);
     }
 }
-
 // --- Bot Listening Function ---
+// This function will ONLY be called by our long-running bot process.
+
 function startListening() {
     bot.onText(/\/start/, (msg) => {
         const welcomeText = `🎉 Welcome, *${msg.from.first_name}*!\n\nClick the button below to play **Math Battle**!`;
         const options = {
             parse_mode: 'Markdown',
             reply_markup: {
-                inline_keyboard: [[{
-                    text: '🚀 Play Game!',
-                    // این دکمه حالا یک دکمه بازی است
-                    // نکته: دکمه بازی همیشه باید اولین دکمه در ردیف اول باشد
-                    callback_game: {}
-                }]]
+                inline_keyboard: [[{ text: '🚀 Play Game!', web_app: { url: 'https://momis.studio/math-battle' } }]]
             }
         };
         bot.sendMessage(msg.chat.id, welcomeText, options);
-    });
-
-    // *** بخش جدید: مدیریت کلیک روی دکمه بازی ***
-    bot.on('callback_query', (query) => {
-        // اگر کلیک مربوط به یک بازی بود
-        if (query.game_short_name) {
-            // بررسی می‌کنیم که نام بازی با بازی ما مطابقت دارد
-            if (query.game_short_name !== MATH_BATTLE_SHORT_NAME) {
-                bot.answerCallbackQuery(query.id, { text: 'Sorry, this game is not available.', show_alert: true });
-                return;
-            }
-
-            const userId = query.from.id;
-            const gameUrl = `https://momis.studio/math-battle?user_id=${userId}`;
-
-            // با این دستور، URL بازی را برای تلگرام ارسال می‌کنیم تا باز شود
-            bot.answerCallbackQuery(query.id, { url: gameUrl })
-                .catch(err => logger.error(`Failed to answer callback query: ${err.message}`));
-        }
     });
 
     // Activate polling to listen for messages
     bot.startPolling();
 
     bot.on('polling_error', (error) => {
+        // This prevents the bot from crashing on minor polling errors
         logger.error(`Telegram Polling Error: ${error.message}`);
     });
 
@@ -112,5 +97,5 @@ function startListening() {
 module.exports = {
     sendWinnerMessage,
     sendConsolationMessage,
-    startListening,
+    startListening, // Export the new function
 };
