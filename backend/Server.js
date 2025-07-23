@@ -109,7 +109,7 @@ class MathGame {
             }
         });
     }
-
+    // Replace your entire runTimer function with this definitive, corrected version
     runTimer(playerId) {
         const player = this.players[playerId];
         if (!player) return;
@@ -117,7 +117,6 @@ class MathGame {
         player.should_stop = false;
 
         const tick = () => {
-            // Stop the timer if the game has been manually stopped or is no longer active
             if (!player || player.should_stop || !player.game_active) {
                 return;
             }
@@ -125,23 +124,23 @@ class MathGame {
             player.time_left -= 1;
             player.last_activity = new Date();
 
-            // The backend timer's only job is to count down. It must not change any game state.
-            // When the frontend's timer hits zero, its API call will trigger the score saving.
-            // This backend timer now only acts as a server-side failsafe.
-            if (player.time_left >= 0) {
-                player.timer = setTimeout(tick, 1000);
-            } else {
-                // When the server timer reaches zero, it does nothing but log and stop.
-                // It does NOT set game_active to false anymore.
+            // ▼▼▼ THIS IS THE CRITICAL FIX - PART 2 ▼▼▼
+            // The backend timer is now the SINGLE SOURCE OF TRUTH for timeouts.
+            if (player.time_left < 0) {
                 logger.info(
-                    `Player ${playerId} server-side timer has reached zero. The game session will expire.`
+                    `Player ${playerId} server-side timer expired. Triggering final save...`
                 );
+                // It calls the corrected timeHandler to save the score and end the game.
+                this.timeHandler(player.jwtPayload.userId);
+                return; // Stop the timer.
             }
+            // ▲▲▲ END OF FIX ▲▲▲
+
+            player.timer = setTimeout(tick, 1000);
         };
 
         player.timer = setTimeout(tick, 1000);
     }
-
     async startGame(jwtPayload, eventId) {
         try {
             const userId = jwtPayload?.userId;
@@ -219,20 +218,27 @@ class MathGame {
         }
     }
 
+    // Replace your entire timeHandler function with this corrected version
     async timeHandler(userId) {
         try {
             const playerId = this.userToPlayerMap[userId];
-            if (!playerId || !this.players[playerId]) {
+            if (
+                !playerId ||
+                !this.players[playerId] ||
+                !this.players[playerId].game_active
+            ) {
+                const player = this.players[playerId];
                 return {
-                    status: "error",
-                    message: "Player not found. Start a new game.",
+                    status: "game_over",
+                    final_score: player ? player.score : 0,
                 };
             }
 
             const player = this.players[playerId];
-            // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
             player.game_active = false;
 
+            // ▼▼▼ THIS IS THE CRITICAL FIX - PART 1 ▼▼▼
+            // Save the score to the database when the timeout happens.
             if (player.score > 0) {
                 await Score.create({
                     score: player.score,
@@ -249,21 +255,19 @@ class MathGame {
             }
             // ▲▲▲ END OF FIX ▲▲▲
 
-            // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
             player.top_score = Math.max(player.top_score, player.score);
 
             return {
                 status: "game_over",
                 final_score: player.score,
                 top_score: player.top_score,
-                eventId: player.currentEventId, // <-- Add this line
+                eventId: player.currentEventId,
             };
         } catch (e) {
             logger.error(`TimeHandle error: ${e.message}`);
             return { status: "error", message: e.message };
         }
     }
-
     async checkAnswer(userId, userAnswer) {
         try {
             const playerId = this.userToPlayerMap[userId];

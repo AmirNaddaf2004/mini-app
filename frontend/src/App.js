@@ -169,21 +169,31 @@ function App() {
         [problem, loading, handleGameOver, token]
     );
 
-    const handleTimeout = useCallback(async () => {
-        const response = await fetch(`${API_BASE}/timeOut`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to submit answer");
-        }
-        const data = await response.json();
-        handleGameOver(data.final_score);
-    }, [handleGameOver]);
+    // const handleTimeout = useCallback(async () => {
+    //     const response = await fetch(`${API_BASE}/timeOut`, {
+    //         method: "POST",
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //             Authorization: `Bearer ${token}`,
+    //         },
+    //     });
+    //     if (!response.ok) {
+    //         const errorData = await response.json();
+    //         throw new Error(errorData.message || "Failed to submit answer");
+    //     }
+    //     const data = await response.json();
+    //     handleGameOver(data.final_score);
+    // }, [handleGameOver]);
+    // Replace your entire handleTimeout function with this simplified version
+    const handleTimeout = useCallback(() => {
+        // The frontend timer's job is now only to update the UI.
+        // It should NOT send an API request, as the backend handles the timeout definitively.
+        // We simply call handleGameOver to switch the view to the leaderboard.
+        console.log(
+            "Frontend timer reached zero. The backend will handle the score. Switching view."
+        );
+        handleGameOver(score); // Pass the current score just for display purposes
+    }, [score, handleGameOver]);
 
     const startLocalTimer = useCallback(
         (initialTime) => {
