@@ -51,7 +51,7 @@ export default function TimerCircle({ total, left }) {
                 // Define a smooth, custom transition for both properties.
                 transition={{
                     // The offset animation should be linear to represent time passing steadily.
-                    strokeDashoffset: { duration: 1, ease: "linear" },
+                    strokeDashoffset: { duration: 0.5, ease: "linear" },
                     // The color change has a soft "ease-in-out" transition.
                     stroke: { duration: 0.5, ease: "easeInOut" }
                 }}
