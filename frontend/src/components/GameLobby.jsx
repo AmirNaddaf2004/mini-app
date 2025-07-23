@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
-import DefaultAvatar from "../assets/default-avatar.png";
-import { motion } from "framer-motion"; // Import motion for animations
+// frontend/src/components/GameLobby.jsx
 
-// The api service definition remains the same
+import React, { useState, useEffect } from "react";
+import DefaultAvatar from "../assets/default-avatar.png"; // Add this line
+// Assuming you have a central api service to handle authenticated requests
+// If not, you can use axios or fetch directly.
+// For now, let's assume a fetch wrapper exists.
 const api = {
     get: (url) =>
         fetch(url, {
@@ -13,26 +15,38 @@ const api = {
 };
 
 const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
+    // State to store the list of active events fetched from the server
     const [events, setEvents] = useState([]);
+    // State to track if the data is being loaded
     const [isLoading, setIsLoading] = useState(true);
 
-    // The useEffect hook for fetching events remains exactly the same
+    // useEffect hook to fetch events when the component mounts
     useEffect(() => {
         const fetchEvents = async () => {
             try {
                 setIsLoading(true);
+                // Fetch the list of active events from the new API endpoint
                 const response = await api.get("/api/events");
                 if (response.status === "success") {
                     setEvents(response.events);
                 }
             } catch (error) {
                 console.error("Failed to fetch events:", error);
+                // Handle error, maybe show a message to the user
             } finally {
                 setIsLoading(false);
             }
         };
+
         fetchEvents();
-    }, []);
+    }, []); // The empty dependency array ensures this runs only once
+
+    // This function will be called when the user clicks any start button
+    const handleStartGame = (eventId) => {
+        // Call the onGameStart function passed from the parent component (App.js)
+        // It will handle the actual API call to /api/start
+        onGameStart(eventId);
+    };
 
     if (isLoading) {
         return (
@@ -42,44 +56,12 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
         );
     }
 
-    // ### VISUAL ENHANCEMENT 1: Animation Variants ###
-    // These define how the lobby elements will animate into view.
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1 // Each child element will appear one after another
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-            transition: {
-                type: "spring",
-                stiffness: 100
-            }
-        }
-    };
-
     return (
-        // The main container is now a motion.div to orchestrate the animation
-        <motion.div
-            className="w-full max-w-md mx-auto bg-gray-800 bg-opacity-70 rounded-xl shadow-lg p-6 text-white"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {/* The user profile section is preserved exactly as it was, now wrapped in motion.div */}
+        <div className="w-full max-w-md mx-auto bg-gray-800 bg-opacity-70 rounded-xl shadow-lg p-6 text-white animate-fade-in">
             {userData && (
-                <motion.div variants={itemVariants} className="flex items-center gap-3 bg-white/10 p-2 rounded-lg mb-6">
+                <div className="flex items-center gap-3 bg-white/10 p-2 rounded-lg mb-6">
                     <img
-                        src={userData.photo_url ? `/api/avatar?url=${encodeURIComponent(userData.photo_url)}` : DefaultAvatar}
-                        alt="Profile"
+src={userData.photo_url ? `/api/avatar?url=${encodeURIComponent(userData.photo_url)}` : DefaultAvatar}                        alt="Profile"
                         className="w-12 h-12 rounded-full border-2 border-gray-500"
                         onError={onImageError}
                     />
@@ -98,47 +80,40 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                     >
                         Logout
                     </button>
-                </motion.div>
+                </div>
             )}
 
-            <motion.h1 variants={itemVariants} className="text-3xl font-bold mb-6 text-center text-yellow-400">
+            <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">
                 Game Mode
-            </motion.h1>
+            </h1>
 
-            {/* ### VISUAL ENHANCEMENT 2: Interactive Cards ### */}
-            {/* Each game mode card is now a motion.div with a hover effect. */}
-            
-            <motion.div
-                variants={itemVariants}
-                whileHover={{ scale: 1.03 }} // Card slightly grows on hover
-                className="bg-gray-700 bg-opacity-50 rounded-lg p-4 my-3"
-            >
+            <div className="bg-gray-700 bg-opacity-50 rounded-lg p-4 my-3 transition-transform transform hover:scale-105">
                 <h2 className="text-xl font-bold text-white">Free Play</h2>
                 <p className="text-sm text-gray-300 mt-1 mb-3">
                     Practice and play just for fun.
                 </p>
                 <button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                    onClick={() => onGameStart(null)}
+                    onClick={() => handleStartGame(null)} // eventId is null for free play
                 >
                     Start
                 </button>
-            </motion.div>
+            </div>
 
             {events.length > 0 && (
-                <motion.div variants={itemVariants} className="relative flex py-3 items-center">
+                <div className="relative flex py-3 items-center">
                     <div className="flex-grow border-t border-gray-600"></div>
-                    <span className="flex-shrink mx-4 text-gray-400">Events</span>
+                    <span className="flex-shrink mx-4 text-gray-400">
+                        Events
+                    </span>
                     <div className="flex-grow border-t border-gray-600"></div>
-                </motion.div>
+                </div>
             )}
 
             {events.map((event) => (
-                <motion.div
+                <div
                     key={event.id}
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.03 }} // Card slightly grows on hover
-                    className="bg-gray-700 bg-opacity-50 rounded-lg p-4 my-3"
+                    className="bg-gray-700 bg-opacity-50 rounded-lg p-4 my-3 transition-transform transform hover:scale-105"
                 >
                     <h2 className="text-xl font-bold text-yellow-400">
                         {event.name}
@@ -148,13 +123,13 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                     </p>
                     <button
                         className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                        onClick={() => onGameStart(event.id)}
+                        onClick={() => handleStartGame(event.id)}
                     >
                         Join Event
                     </button>
-                </motion.div>
+                </div>
             ))}
-        </motion.div>
+        </div>
     );
 };
 
