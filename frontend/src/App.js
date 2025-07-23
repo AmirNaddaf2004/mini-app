@@ -451,7 +451,7 @@ function App() {
                     key={leaderboardKey}
                     API_BASE={API_BASE}
                     finalScore={finalScore}
-                    onReplay={startGame} 
+                    onReplay={() => startGame(currentGameEventId)}
                     onHome={() => setView("lobby")}
                     userData={userData}
                     eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
