@@ -522,92 +522,96 @@ app.post("/api/timeOut", authenticateToken, async (req, res) => {
     }
 });
 
-app.get("/api/leaderboard", authenticateToken, async (req, res) => {
+// اضافه کردن authenticateToken برای شناسایی کاربر فعلی
+app.get("/api/leaderbord", authenticateToken, async (req, res) => {
     try {
-        const currentUserTelegramId = req.user.userId; // گرفتن شناسه‌ی کاربر فعلی از توکن
+        // شناسه‌ی کاربر فعلی از توکن گرفته می‌شود
+        const currentUserTelegramId = req.user.userId;
         const { eventId } = req.query;
 
-        // شرط فیلتر کردن بر اساس رویداد
-        const whereCondition = {
-            eventId: (eventId && eventId !== "null" && eventId !== "undefined") ? eventId : null,
-        };
+        // ساخت شرط فیلتر، دقیقا مانند کد اصلی شما
+        const whereCondition = {};
+        if (eventId && eventId !== "null" && eventId !== "undefined") {
+            whereCondition.eventId = eventId;
+        } else {
+            whereCondition.eventId = null;
+        }
+        logger.info(`Fetching leaderboard for user ${currentUserTelegramId} with condition:`, whereCondition);
 
-        // یک کوئری خام و بهینه برای گرفتن رتبه‌بندی کل بازیکنان
-        const [allRanks] = await sequelize.query(`
-            SELECT
-                userTelegramId,
-                MAX(score) AS max_score,
-                RANK() OVER (ORDER BY MAX(score) DESC) AS \`rank\`
-            FROM
-                scores
-            WHERE
-                ${whereCondition.eventId ? `eventId = :eventId` : 'eventId IS NULL'}
-            GROUP BY
-                userTelegramId
-            ORDER BY
-                max_score DESC;
-        `, {
-            replacements: { eventId: whereCondition.eventId },
-            type: sequelize.QueryTypes.SELECT
+        // مرحله ۱: بهترین امتیاز *تمام* کاربران را بر اساس شرط پیدا می‌کنیم (بدون limit)
+        const allScores = await Score.findAll({
+            where: whereCondition,
+            attributes: [
+                "userTelegramId",
+                [sequelize.fn("MAX", sequelize.col("score")), "max_score"],
+            ],
+            group: ["userTelegramId"],
+            order: [[sequelize.col("max_score"), "DESC"]], // مرتب‌سازی بر اساس بیشترین امتیاز
+            raw: true,
         });
 
-        // پیدا کردن ۵ نفر برتر
-        const top5 = allRanks.slice(0, 5);
+        // مرحله ۲: رتبه‌بندی را در سرور محاسبه می‌کنیم
+        let rank = 0;
+        let lastScore = Infinity;
+        const allRanks = allScores.map((entry, index) => {
+            if (entry.max_score < lastScore) {
+                rank = index + 1; // رتبه برابر با جایگاه در آرایه مرتب‌شده است
+                lastScore = entry.max_score;
+            }
+            return {
+                userTelegramId: entry.userTelegramId,
+                score: entry.max_score,
+                rank: rank, // اضافه کردن رتبه به هر بازیکن
+            };
+        });
 
-        // پیدا کردن اطلاعات کاربر فعلی در لیست رتبه‌بندی
-        let currentUserRank = allRanks.find(
-            (r) => r.userTelegramId == currentUserTelegramId
+        // مرحله ۳: ۵ نفر برتر و کاربر فعلی را از لیست رتبه‌بندی شده جدا می‌کنیم
+        const top5Players = allRanks.slice(0, 5);
+        const currentUserData = allRanks.find(
+            (p) => p.userTelegramId == currentUserTelegramId
         );
 
-        // اگر کاربر فعلی جزو ۵ نفر برتر نبود، جداگانه پیدایش می‌کنیم
-        if (!currentUserRank && allRanks.length > 5) {
-             // currentUserRank در بالا پیدا شده، نیازی به کوئری مجدد نیست
-        }
-
-        // گرفتن اطلاعات کامل کاربران (نام، عکس و...)
-        const userIds = [
-            ...new Set([ // جلوگیری از ارسال ID تکراری
-                ...top5.map((s) => s.userTelegramId),
-                ...(currentUserRank ? [currentUserTelegramId] : []),
+        // مرحله ۴: اطلاعات کامل (نام، عکس و...) را برای کاربران مورد نیاز می‌گیریم
+        const userIdsToFetch = [
+            ...new Set([ // با Set از ارسال ID تکراری جلوگیری می‌کنیم
+                ...top5Players.map((p) => p.userTelegramId),
+                ...(currentUserData ? [currentUserData.userTelegramId] : []), // اگر کاربر فعلی رکوردی داشت، ID او را هم اضافه کن
             ]),
         ];
-
-        let users = [];
-        if (userIds.length > 0) {
-            users = await User.findAll({
-                where: { telegramId: userIds },
-                raw: true,
-            });
-        }
         
+        const users = await User.findAll({
+            where: { telegramId: userIdsToFetch },
+            raw: true,
+        });
+
         const userMap = users.reduce((map, user) => {
             map[user.telegramId] = user;
             return map;
         }, {});
 
-        // ساخت آبجکت نهایی برای ارسال به فرانت‌اند
-        const formatUser = (rankEntry) => {
-            const user = userMap[rankEntry.userTelegramId];
+        // تابع کمکی برای ترکیب اطلاعات کاربر با رتبه و امتیاز
+        const formatPlayer = (playerData) => {
+            if (!playerData) return null;
+            const userProfile = userMap[playerData.userTelegramId];
             return {
-                telegramId: user?.telegramId,
-                username: user?.username,
-                firstName: user?.firstName,
-                photo_url: user?.photo_url,
-                score: rankEntry.max_score,
-                rank: parseInt(rankEntry.rank, 10),
+                telegramId: userProfile?.telegramId,
+                username: userProfile?.username,
+                firstName: userProfile?.firstName,
+                photo_url: userProfile?.photo_url,
+                score: playerData.score,
+                rank: playerData.rank,
             };
         };
-
-        const topPlayers = top5.map(formatUser);
-        const currentUserData = currentUserRank ? formatUser(currentUserRank) : null;
         
+        // مرحله ۵: ساخت آبجکت نهایی برای ارسال به فرانت‌اند
         res.json({
             status: "success",
             leaderboard: {
-                top: topPlayers,
-                currentUser: currentUserData,
+                top: top5Players.map(formatPlayer), // لیست ۵ نفر برتر
+                currentUser: formatPlayer(currentUserData), // اطلاعات کاربر فعلی
             },
         });
+
     } catch (e) {
         logger.error(`Leaderboard error: ${e.message}`, { stack: e.stack });
         res.status(500).json({
