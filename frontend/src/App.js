@@ -3,7 +3,6 @@ import React, {
     useEffect,
     useCallback,
     useRef,
-    leaderboardContent,
     useMemo,
 } from "react";
 import ProblemCard from "./components/ProblemCard";
@@ -166,7 +165,7 @@ function App() {
                 }
             }
         },
-        [problem, loading, handleGameOver, token]
+        [problem, loading, handleGameOver, token, startLocalTimer]
     );
 
     // const handleTimeout = useCallback(async () => {
@@ -439,6 +438,7 @@ function App() {
         timeLeft,
         loading,
         submitAnswer,
+        handleImageError,
         startGame,
         userData,
         gameActive,
@@ -457,7 +457,7 @@ function App() {
                     eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
                 />
             ),
-        [view, leaderboardKey, finalScore, userData, currentGameEventId]
+        [view, startGame,leaderboardKey, finalScore, userData, currentGameEventId]
     );
 
     return (
