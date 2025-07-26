@@ -77,7 +77,7 @@ function startListening() {
         const options = {
             parse_mode: 'Markdown',
             reply_markup: {
-                inline_keyboard: [[{ text: '🚀 Play Game!', web_app: { url: 'https://momis.studio' } }]]
+                inline_keyboard: [[{ text: '🚀 Play Game!', web_app: { url: 'https://math-battle.momis.studio' } }]]
             }
         };
         bot.sendMessage(msg.chat.id, welcomeText, options);
