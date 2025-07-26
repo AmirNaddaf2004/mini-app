@@ -111,7 +111,75 @@ function App() {
         }
     }, []);
 
-    const submitAnswer = useCallback(
+ 
+
+    // const handleTimeout = useCallback(async () => {
+    //     const response = await fetch(`${API_BASE}/timeOut`, {
+    //         method: "POST",
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //             Authorization: `Bearer ${token}`,
+    //         },
+    //     });
+    //     if (!response.ok) {
+    //         const errorData = await response.json();
+    //         throw new Error(errorData.message || "Failed to submit answer");
+    //     }
+    //     const data = await response.json();
+    //     handleGameOver(data.final_score);
+    // }, [handleGameOver]);
+    // Replace your entire handleTimeout function with this simplified version
+    // Replace your entire handleTimeout function with this definitive, corrected version
+    const handleTimeout = useCallback(async () => {
+        try {
+            // ▼▼▼ THIS IS THE DEFINITIVE FIX ▼▼▼
+            // When the frontend timer ends, it MUST call the backend's timeout endpoint
+            // and wait for a response. This ensures the score is saved BEFORE we
+            // try to display the leaderboard.
+            const response = await fetch(`${API_BASE}/timeOut`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, // Pass the auth token
+                },
+            });
+
+            if (!response.ok) {
+                // If the backend call fails, still end the game on the frontend
+                console.error("Timeout API call failed");
+                handleGameOver(score); // Show leaderboard with the score we had
+                return;
+            }
+
+            const data = await response.json();
+            // Now, call handleGameOver with the CONFIRMED final score from the server
+            handleGameOver(data.final_score);
+            // ▲▲▲ END OF FIX ▲▲▲
+        } catch (error) {
+            console.error("Error during timeout handling:", error);
+            handleGameOver(score); // Fallback to end the game
+        }
+    }, [token, score, handleGameOver]); // Added `token` and `score` to dependency array
+    
+    const startLocalTimer = useCallback(
+        (initialTime) => {
+            clearResources();
+            setTimeLeft(initialTime);
+
+            timerId.current = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        handleTimeout();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        },
+        [clearResources, handleTimeout]
+    );
+
+       const submitAnswer = useCallback(
         async (answer) => {
             if (!problem || loading || !token) return;
 
@@ -167,72 +235,7 @@ function App() {
         },
         [problem, loading, handleGameOver, token, startLocalTimer]
     );
-
-    // const handleTimeout = useCallback(async () => {
-    //     const response = await fetch(`${API_BASE}/timeOut`, {
-    //         method: "POST",
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //             Authorization: `Bearer ${token}`,
-    //         },
-    //     });
-    //     if (!response.ok) {
-    //         const errorData = await response.json();
-    //         throw new Error(errorData.message || "Failed to submit answer");
-    //     }
-    //     const data = await response.json();
-    //     handleGameOver(data.final_score);
-    // }, [handleGameOver]);
-    // Replace your entire handleTimeout function with this simplified version
-    // Replace your entire handleTimeout function with this definitive, corrected version
-    const handleTimeout = useCallback(async () => {
-        try {
-            // ▼▼▼ THIS IS THE DEFINITIVE FIX ▼▼▼
-            // When the frontend timer ends, it MUST call the backend's timeout endpoint
-            // and wait for a response. This ensures the score is saved BEFORE we
-            // try to display the leaderboard.
-            const response = await fetch(`${API_BASE}/timeOut`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`, // Pass the auth token
-                },
-            });
-
-            if (!response.ok) {
-                // If the backend call fails, still end the game on the frontend
-                console.error("Timeout API call failed");
-                handleGameOver(score); // Show leaderboard with the score we had
-                return;
-            }
-
-            const data = await response.json();
-            // Now, call handleGameOver with the CONFIRMED final score from the server
-            handleGameOver(data.final_score);
-            // ▲▲▲ END OF FIX ▲▲▲
-        } catch (error) {
-            console.error("Error during timeout handling:", error);
-            handleGameOver(score); // Fallback to end the game
-        }
-    }, [token, score, handleGameOver]); // Added `token` and `score` to dependency array
-    const startLocalTimer = useCallback(
-        (initialTime) => {
-            clearResources();
-            setTimeLeft(initialTime);
-
-            timerId.current = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        handleTimeout();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        },
-        [clearResources, handleTimeout]
-    );
-
+    
     // MODIFIED: The `startGame` function now accepts `eventId`
     const startGame = useCallback(
         async (eventId) => {
