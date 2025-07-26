@@ -111,8 +111,6 @@ function App() {
         }
     }, []);
 
- 
-
     // const handleTimeout = useCallback(async () => {
     //     const response = await fetch(`${API_BASE}/timeOut`, {
     //         method: "POST",
@@ -160,7 +158,7 @@ function App() {
             handleGameOver(score); // Fallback to end the game
         }
     }, [token, score, handleGameOver]); // Added `token` and `score` to dependency array
-    
+
     const startLocalTimer = useCallback(
         (initialTime) => {
             clearResources();
@@ -179,7 +177,7 @@ function App() {
         [clearResources, handleTimeout]
     );
 
-       const submitAnswer = useCallback(
+    const submitAnswer = useCallback(
         async (answer) => {
             if (!problem || loading || !token) return;
 
@@ -459,7 +457,14 @@ function App() {
                     eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
                 />
             ),
-        [view, startGame,leaderboardKey, finalScore, userData, currentGameEventId]
+        [
+            view,
+            startGame,
+            leaderboardKey,
+            finalScore,
+            userData,
+            currentGameEventId,
+        ]
     );
 
     return (
@@ -486,13 +491,15 @@ function App() {
             {gameContent}
             {leaderboardContent}
 
-            {/* لوگوی تیم */}
-            <img
-                src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
-                alt="Team Logo"
-                className="absolute bottom-4 right-4 w-24 opacity-70 pointer-events-none select-none"
-                loading="lazy"
-            />
+            {/* نمایش لوگو فقط در صفحه بازی */}
+            {view === "game" && (
+                <img
+                    src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
+                    alt="Team Logo"
+                    className="absolute bottom-4 right-4 w-20 h-20 object-contain opacity-40 pointer-events-none z-0"
+                    loading="lazy"
+                />
+            )}
         </div>
     );
 }
