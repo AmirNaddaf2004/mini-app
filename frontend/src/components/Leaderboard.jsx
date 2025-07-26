@@ -121,7 +121,7 @@ export default function Leaderboard({ API_BASE, onReplay, finalScore, onHome, us
         <div className="w-full max-w-md mx-auto bg-white/80 backdrop-blur p-6 rounded-3xl shadow-xl text-slate-800">
             {banner}
             <h2 className="text-3xl font-bold text-center text-indigo-700 mb-4">
-                {eventId ? "Event Leaderboard" : "All-Time Best"}
+                {eventId ? "Event Leaderboard" : "Free Mode LeaderBoard"}
             </h2>
 
             <ul>

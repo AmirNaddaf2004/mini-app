@@ -488,7 +488,7 @@ function App() {
 
             {/* لوگوی تیم */}
             <img
-                src={`${process.env.PUBLIC_URL}/teamlogo.png`}
+                src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
                 alt="Team Logo"
                 className="absolute bottom-4 right-4 w-24 opacity-70 pointer-events-none select-none"
                 loading="lazy"
