@@ -23,7 +23,7 @@ const allowedOrigins = [
     "https://momis.studio",
     "https://www.momis.studio",
     "https://web.telegram.org",
-    "https://math-battle.games.momis.studio",
+    "https://math-battle.momis.studio",
 ];
 
 app.use((req, res, next) => {
