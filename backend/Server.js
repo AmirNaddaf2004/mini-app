@@ -523,7 +523,7 @@ app.post("/api/timeOut", authenticateToken, async (req, res) => {
 });
 
 // اضافه کردن authenticateToken برای شناسایی کاربر فعلی
-app.get("/api/leaderbord", authenticateToken, async (req, res) => {
+app.get("/api/leaderboard", authenticateToken, async (req, res) => {
     try {
         // شناسه‌ی کاربر فعلی از توکن گرفته می‌شود
         const currentUserTelegramId = req.user.userId;
