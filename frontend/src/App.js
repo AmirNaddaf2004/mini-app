@@ -235,7 +235,7 @@ function App() {
         },
         [problem, loading, handleGameOver, token, startLocalTimer]
     );
-    
+
     // MODIFIED: The `startGame` function now accepts `eventId`
     const startGame = useCallback(
         async (eventId) => {
@@ -442,7 +442,6 @@ function App() {
         loading,
         submitAnswer,
         handleImageError,
-        startGame,
         userData,
         gameActive,
     ]);
