@@ -1,5 +1,8 @@
+// frontend/src/components/GameLobby.jsx
+
 import React, { useState, useEffect } from "react";
 import DefaultAvatar from "../assets/default-avatar.png";
+
 const api = {
     get: (url) =>
         fetch(url, {
@@ -10,39 +13,41 @@ const api = {
 };
 
 const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
-    // State to store the list of active events fetched from the server
     const [events, setEvents] = useState([]);
-    // State to track if the data is being loaded
     const [isLoading, setIsLoading] = useState(true);
 
-    // useEffect hook to fetch events when the component mounts
     useEffect(() => {
         const fetchEvents = async () => {
+            // Log 1: Check if the fetch process starts
+            console.log("LOG 1: Starting to fetch events from API...");
             try {
                 setIsLoading(true);
-                // Fetch the list of active events from the new API endpoint
                 const response = await api.get("/api/events");
-                if (response.status === "success") {
+                
+                // Log 2: See the raw response from the server
+                console.log("LOG 2: Received raw response from API:", response);
+
+                if (response && response.status === "success" && Array.isArray(response.events)) {
+                    // Log 3: Confirm we are about to set the state
+                    console.log("LOG 3: API call successful. Setting events state with:", response.events);
                     setEvents(response.events);
+                } else {
+                    console.error("LOG 3 ERROR: API response was not in the expected format.", response);
+                    setEvents([]); // Set to empty array on failure
                 }
             } catch (error) {
-                console.error("Failed to fetch events:", error);
-                // Handle error, maybe show a message to the user
+                console.error("API call failed entirely:", error);
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchEvents();
-    }, []); // The empty dependency array ensures this runs only once
+    }, []);
 
-    // This function will be called when the user clicks any start button
-    const handleStartGame = (eventId) => {
-        // Call the onGameStart function passed from the parent component (App.js)
-        // It will handle the actual API call to /api/start
-        onGameStart(eventId);
-    };
-
+    // Log 4: Check the state right before rendering
+    console.log("LOG 4: Rendering GameLobby component. Current 'events' state is:", events);
+    
     if (isLoading) {
         return (
             <div className="w-full max-w-md mx-auto text-center p-6">
@@ -53,79 +58,42 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
 
     return (
         <div className="w-full max-w-md mx-auto bg-gray-800 bg-opacity-70 rounded-xl shadow-lg p-6 text-white animate-fade-in">
-            {userData && (
-                <div className="flex items-center gap-3 bg-white/10 p-2 rounded-lg mb-6">
-                    <img
-                        src={
-                            userData.photo_url
-                                ? `/api/avatar?url=${encodeURIComponent(
-                                      userData.photo_url
-                                  )}`
-                                : DefaultAvatar
-                        }
-                        alt="Profile"
-                        className="w-12 h-12 rounded-full border-2 border-gray-500"
-                        onError={onImageError}
-                    />
-                    <div className="flex-grow">
-                        <h2 className="font-bold text-lg leading-tight">
-                            {userData.first_name} {userData.last_name}
-                        </h2>
-                        <p className="text-sm opacity-80">
-                            @{userData.username}
-                        </p>
-                    </div>
-                    <button
-                        onClick={onLogout}
-                        className="ml-auto text-xs bg-red-500/50 px-3 py-1.5 rounded-md hover:bg-red-500/80 transition-colors"
-                        title="Logout"
-                    >
-                        Logout
-                    </button>
-                </div>
-            )}
-
+            {/* ... Your user profile JSX ... */}
+            
             <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">
                 Game Mode
             </h1>
 
-            <div className="bg-gray-700 bg-opacity-50 rounded-lg p-4 my-3 transition-transform transform hover:scale-105">
-                <h2 className="text-xl font-bold text-white">Free Play</h2>
-                <p className="text-sm text-gray-300 mt-1 mb-3">
-                    Practice and play just for fun.
-                </p>
+            {/* Free Play Card */}
+            <div className="bg-gray-700 ...">
+                {/* ... */}
                 <button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                    onClick={() => handleStartGame(null)} // eventId is null for free play
+                    className="w-full bg-blue-600 ..."
+                    onClick={() => onGameStart(null)}
                 >
                     Start
                 </button>
             </div>
+
+            {/* Log 5: Check the condition right before the JSX is rendered */}
+            {console.log("LOG 5: About to render events block. Condition `events.length > 0` is:", events.length > 0)}
+            
+            {/* This is the intelligent block to show either events or the 'No Tournaments' message */}
             {events.length > 0 ? (
-                // If there ARE active events, show the divider and the event cards
                 <>
                     <div className="relative flex py-3 items-center">
                         <div className="flex-grow border-t border-gray-600"></div>
-                        <span className="flex-shrink mx-4 text-gray-400">
-                            Events
-                        </span>
+                        <span className="flex-shrink mx-4 text-gray-400">Events</span>
                         <div className="flex-grow border-t border-gray-600"></div>
                     </div>
 
                     {events.map((event) => (
-                        <div
-                            key={event.id}
-                            className="bg-gray-700 bg-opacity-50 rounded-lg p-4 my-3 transition-transform transform hover:scale-105"
-                        >
-                            <h2 className="text-xl font-bold text-yellow-400">
-                                {event.name}
-                            </h2>
-                            <p className="text-sm text-gray-300 mt-1 mb-3">
-                                {event.description}
-                            </p>
+                        <div key={event.id} className="bg-gray-700 ...">
+                            <h2 className="text-xl ...">{event.name}</h2>
+                            <p className="text-sm ...">{event.description}</p>
                             <button
-                                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                                onClick={() => handleStartGame(event.id)}
+                                className="w-full bg-green-500 ..."
+                                onClick={() => onGameStart(event.id)}
                             >
                                 Join Event
                             </button>
@@ -133,13 +101,12 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                     ))}
                 </>
             ) : (
-                // ELSE, if there are NO active events, show a disabled-looking card
                 <div className="bg-gray-900 bg-opacity-70 rounded-lg p-4 my-3 cursor-not-allowed">
                     <h2 className="text-xl font-bold text-gray-500">
                         No Active Tournaments
                     </h2>
                     <p className="text-sm text-gray-400 mt-1">
-                        Check back later for new events!
+                        Check back later for new events! You can still play in Free Play mode.
                     </p>
                 </div>
             )}
