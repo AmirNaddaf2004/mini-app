@@ -111,28 +111,10 @@ function App() {
         }
     }, []);
 
-    // const handleTimeout = useCallback(async () => {
-    //     const response = await fetch(`${API_BASE}/timeOut`, {
-    //         method: "POST",
-    //         headers: {
-    //             "Content-Type": "application/json",
-    //             Authorization: `Bearer ${token}`,
-    //         },
-    //     });
-    //     if (!response.ok) {
-    //         const errorData = await response.json();
-    //         throw new Error(errorData.message || "Failed to submit answer");
-    //     }
-    //     const data = await response.json();
-    //     handleGameOver(data.final_score);
-    // }, [handleGameOver]);
-    // Replace your entire handleTimeout function with this simplified version
-    // Replace your entire handleTimeout function with this definitive, corrected version
+   
     const handleTimeout = useCallback(async () => {
         try {
-            // ▼▼▼ THIS IS THE DEFINITIVE FIX ▼▼▼
-            // When the frontend timer ends, it MUST call the backend's timeout endpoint
-            // and wait for a response. This ensures the score is saved BEFORE we
+    
             // try to display the leaderboard.
             const response = await fetch(`${API_BASE}/timeOut`, {
                 method: "POST",
