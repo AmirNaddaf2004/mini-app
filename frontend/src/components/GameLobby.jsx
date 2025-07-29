@@ -101,10 +101,8 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                     Start
                 </button>
             </div>
-
-            {/* This block intelligently decides what to show based on the events array */}
             {events.length > 0 ? (
-                // If there ARE active events, show them
+                // If there ARE active events, show the divider and the event cards
                 <>
                     <div className="relative flex py-3 items-center">
                         <div className="flex-grow border-t border-gray-600"></div>
@@ -135,14 +133,13 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                     ))}
                 </>
             ) : (
-                // If there are NO active events, show a disabled-looking card
+                // ELSE, if there are NO active events, show a disabled-looking card
                 <div className="bg-gray-900 bg-opacity-70 rounded-lg p-4 my-3 cursor-not-allowed">
                     <h2 className="text-xl font-bold text-gray-500">
                         No Active Tournaments
                     </h2>
                     <p className="text-sm text-gray-400 mt-1">
-                        Check back later for new events! You can still play in
-                        Free Play mode.
+                        Check back later for new events!
                     </p>
                 </div>
             )}
