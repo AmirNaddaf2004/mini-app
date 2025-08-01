@@ -101,7 +101,7 @@ const GameLobby = ({ onGameStart, userData, onLogout, onImageError }) => {
                     Start
                 </button>
             </div>
-            console.log(events);
+
             {events.length > 0 ? (
                 // If there ARE active events, show them
                 <>
