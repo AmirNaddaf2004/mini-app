@@ -47,9 +47,10 @@ You have earned a special reward. Click the button below to claim your prize.
 
 async function sendConsolationMessage(telegramId, userName, topScore) {
     const message = 
-`👋 Hello, *${userName}*!
+` Sorry for last two messages!
+👋 Hello, *${userName}*!
 
-Thank you for participating in our latest tournament. This time you didn't make it to the ..top player.. (last message was a mistake!).
+Thank you for participating in our latest tournament. This time you didn't make it to the ..top player.. (last messages was mistake!).
 
 *Your highest score:* *${topScore}*
 
