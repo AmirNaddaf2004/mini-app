@@ -20,7 +20,7 @@ async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
     const message = 
 `🏆 *Congratulations, ${userName}!* 🏆
 
-You are one of the top players in the last tournament!
+You are the top player in the last tournament!
 
 *Your final score:* *${score}*
 
