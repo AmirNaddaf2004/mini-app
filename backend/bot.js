@@ -49,7 +49,7 @@ async function sendConsolationMessage(telegramId, userName, topScore) {
     const message = 
 `👋 Hello, *${userName}*!
 
-Thank you for participating in our latest tournament. This time you didn't make it to the top 10.
+Thank you for participating in our latest tournament. This time you didn't make it to the top player.
 
 *Your highest score:* *${topScore}*
 
