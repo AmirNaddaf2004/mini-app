@@ -10,7 +10,7 @@ if (!token) {
 }
 
 // Create the bot instance WITHOUT starting it
-const bot = new TelegramBot(token);
+const bot = new TelegramBot(token, {polling: true});
 
 // --- Message Sending Functions ---
 // These functions can be safely imported and used by any script.
