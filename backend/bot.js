@@ -133,11 +133,13 @@ function startListening() {
 
     // هندلر برای بررسی مجدد عضویت
     bot.on('callback_query', async (callbackQuery) => {
-        logger.info("data is:  " + data);
-
         const chatId = callbackQuery.message.chat.id;
         const userId = callbackQuery.from.id;
         const data = callbackQuery.data;
+        const queryId = callbackQuery.id;
+
+        logger.info("data is:  " + data);
+
         // Acknowledge the callback query to remove the loading indicator on the client side
         await bot.answerCallbackQuery(queryId, { text: 'Processing...' }); 
 
