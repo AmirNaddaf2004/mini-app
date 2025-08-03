@@ -101,7 +101,7 @@ function startListening() {
             // ارسال پیام عضویت در کانال
             const channelLink = 'https://t.me/MOMIS_studio'; 
             const groupLink = 'https://t.me/MOMIS_community'; 
-            const message = `👋 Hello, *${firstName}*!\n\nTo play Math Battle, please join our community group and channel first and start again:`;
+            const message = `👋 Hello, *${firstName}*!\n\nTo play Math Battle, please join our community group and channel first then start again.`;
             
             const options = {
                 parse_mode: 'Markdown',
