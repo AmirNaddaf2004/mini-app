@@ -101,15 +101,16 @@ function startListening() {
             // ارسال پیام عضویت در کانال
             const channelLink = 'https://t.me/MOMIS_studio'; 
             const groupLink = 'https://t.me/MOMIS_community'; 
-            const message = `👋 Hello, *${firstName}*!\n\nTo play Math Battle, please join our community group and channel first:`;
+            const message = `👋 Hello, *${firstName}*!\n\nTo play Math Battle, please join our community group and channel first and start again:`;
             
             const options = {
                 parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: '📢 Join Community Group', url: groupLink }],
-                        [{ text: '📢 Join Channel', url: channelLink }],
-                        [{ text: '✅ I Joined', url: `https://t.me/Momis_game_bot?start` }]
+                        [{ text: '📢 Join Channel', url: channelLink }]
+                        // , [{ text: '✅ I Joined', url: `https://t.me/Momis_game_bot?start` }]
+                        // ,[{ text: '✅ I Joined', callback_data: 'check_membership' }]
                     ]
                 }
             };
