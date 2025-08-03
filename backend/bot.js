@@ -68,6 +68,22 @@ The tournament has now officially ended. Keep practicing for the next event!`;
         logger.error(`Failed to send consolation message to ${telegramId}. Reason: ${error.message}`);
     }
 }
+
+// --- Channel Membership Check ---
+async function isUserInChannel(userId) {
+    const CHANNEL_ID = '@MOMIS_studio';
+    const GROUP_ID = '@MOMIS_community';
+    try {
+        const member1 = await bot.getChatMember(CHANNEL_ID, userId);
+        const member2 = await bot.getChatMember(GROUP_ID, userId);
+        return ['member', 'administrator', 'creator'].includes(member1.status) &&
+            ['member', 'administrator', 'creator'].includes(member2.status) ;
+    } catch (error) {
+        logger.error(`Failed to check channel membership for ${userId}: ${error.message}`);
+        return false;
+    }
+}
+
 // --- Bot Listening Function ---
 // This function will ONLY be called by our long-running bot process.
 
@@ -90,11 +106,11 @@ function startListening() {
             const options = {
                 parse_mode: 'Markdown',
                 reply_markup: {
-                    inline_keyboard: [[
-                        { text: '📢 Join Community Group', url: groupLink }],
+                    inline_keyboard: [
+                        [{ text: '📢 Join Community Group', url: groupLink }],
                         [{ text: '📢 Join Channel', url: channelLink }],
-                        [{ text: '✅ I Joined', callback_data: 'check_membership' }
-                    ]]
+                        [{ text: '✅ I Joined', callback_data: 'check_membership' }]
+                    ]
                 }
             };
             
@@ -121,6 +137,8 @@ function startListening() {
         const userId = callbackQuery.from.id;
         const data = callbackQuery.data;
         console.log("data is:  " + data);
+
+        await bot.answerCallbackQuery(callbackQuery.id);
         if (data === 'check_membership') {
             try {
                 const isMember = await isUserInChannel(userId);
@@ -165,21 +183,6 @@ function startListening() {
     });
 
     logger.info('Telegram Bot initialized and is now listening for commands...');
-}
-
-// --- Channel Membership Check ---
-async function isUserInChannel(userId) {
-    const CHANNEL_ID = '@MOMIS_studio';
-    const GROUP_ID = '@MOMIS_community';
-    try {
-        const member1 = await bot.getChatMember(CHANNEL_ID, userId);
-        const member2 = await bot.getChatMember(GROUP_ID, userId);
-        return ['member', 'administrator', 'creator'].includes(member1.status) &&
-            ['member', 'administrator', 'creator'].includes(member2.status) ;
-    } catch (error) {
-        logger.error(`Failed to check channel membership for ${userId}: ${error.message}`);
-        return false;
-    }
 }
 
 module.exports = {
