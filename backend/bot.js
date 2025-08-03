@@ -175,7 +175,7 @@ function startListening() {
     });
 
     // Activate polling to listen for messages
-    bot.startPolling();
+    // bot.startPolling();
 
     bot.on('polling_error', (error) => {
         // This prevents the bot from crashing on minor polling errors
