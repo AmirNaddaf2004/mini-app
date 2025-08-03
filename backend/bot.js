@@ -128,7 +128,7 @@ function startListening() {
         const chatId = callbackQuery.message.chat.id;
         const userId = callbackQuery.from.id;
         const data = callbackQuery.data;
-
+        console.log("data is:  " + data);
         if (data === 'check_membership') {
             try {
                 const isMember = await isUserInChannel(userId);
