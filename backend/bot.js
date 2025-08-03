@@ -10,7 +10,7 @@ if (!token) {
 }
 
 // Create the bot instance WITHOUT starting it
-const bot = new TelegramBot(token, {polling: true});
+const bot = new TelegramBot(token);
 
 // --- Message Sending Functions ---
 // These functions can be safely imported and used by any script.
@@ -133,12 +133,14 @@ function startListening() {
 
     // هندلر برای بررسی مجدد عضویت
     bot.on('callback_query', async (callbackQuery) => {
+        console.log("data is:  " + data);
+
         const chatId = callbackQuery.message.chat.id;
         const userId = callbackQuery.from.id;
         const data = callbackQuery.data;
-        console.log("data is:  " + data);
+        // Acknowledge the callback query to remove the loading indicator on the client side
+        await bot.answerCallbackQuery(queryId, { text: 'Processing...' }); 
 
-        await bot.answerCallbackQuery(callbackQuery.id);
         if (data === 'check_membership') {
             try {
                 const isMember = await isUserInChannel(userId);
@@ -175,7 +177,7 @@ function startListening() {
     });
 
     // Activate polling to listen for messages
-    // bot.startPolling();
+    bot.startPolling();
 
     bot.on('polling_error', (error) => {
         // This prevents the bot from crashing on minor polling errors
