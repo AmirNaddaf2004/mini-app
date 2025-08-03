@@ -109,7 +109,7 @@ function startListening() {
                     inline_keyboard: [
                         [{ text: '📢 Join Community Group', url: groupLink }],
                         [{ text: '📢 Join Channel', url: channelLink }],
-                        [{ text: '✅ I Joined', url: `https://t.me/Momis_game_bot?start` }]
+                        [{ text: '✅ I Joined', url: `https://t.me/Momis_game_bot?/start` }]
                     ]
                 }
             };
