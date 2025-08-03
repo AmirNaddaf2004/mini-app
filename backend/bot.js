@@ -133,7 +133,7 @@ function startListening() {
 
     // هندلر برای بررسی مجدد عضویت
     bot.on('callback_query', async (callbackQuery) => {
-        console.log("data is:  " + data);
+        logger.info("data is:  " + data);
 
         const chatId = callbackQuery.message.chat.id;
         const userId = callbackQuery.from.id;
