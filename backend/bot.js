@@ -72,7 +72,35 @@ The tournament has now officially ended. Keep practicing for the next event!`;
 // This function will ONLY be called by our long-running bot process.
 
 function startListening() {
-    bot.onText(/\/start/, (msg) => {
+    bot.onText(/\/start/, async(msg) => {
+        try {
+        const chatId = msg.chat.id;
+        const userId = msg.from.id;
+        const firstName = msg.from.first_name;
+
+        // بررسی عضویت در کانال
+        const isMember = await isUserInChannel(userId);
+        
+        if (!isMember) {
+            // ارسال پیام عضویت در کانال
+            const channelLink = 'https://t.me/MOMIS_studio'; 
+            const groupLink = 'https://t.me/MOMIS_studio'; 
+            const message = `👋 Hello, *${firstName}*!\n\nTo play Math Battle, please join our community group and channel first:`;
+            
+            const options = {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: '📢 Join Community Group', url: groupLink },
+                        { text: '📢 Join Channel', url: channelLink },
+                        { text: '✅ I Joined', callback_data: 'check_membership' }
+                    ]]
+                }
+            };
+            
+            return await bot.sendMessage(chatId, message, options);
+        }
+
         const welcomeText = `🎉 Welcome, *${msg.from.first_name}*!\n\nClick the button below to play **Math Battle**!`;
         const options = {
             parse_mode: 'Markdown',
@@ -80,7 +108,11 @@ function startListening() {
                 inline_keyboard: [[{ text: '🚀 Play Game!', web_app: { url: 'https://math-battle.momis.studio' } }]]
             }
         };
-        bot.sendMessage(msg.chat.id, welcomeText, options);
+        await bot.sendMessage(msg.chat.id, welcomeText, options);}
+        catch (error) {
+            logger.error(`Error in /start handler: ${error.message}`);
+            await bot.sendMessage(chatId, '❌ An error occurred. Please try again later.');
+        }
     });
 
     // Activate polling to listen for messages
@@ -91,7 +123,63 @@ function startListening() {
         logger.error(`Telegram Polling Error: ${error.message}`);
     });
 
+    // هندلر برای بررسی مجدد عضویت
+    bot.on('callback_query', async (callbackQuery) => {
+        const chatId = callbackQuery.message.chat.id;
+        const userId = callbackQuery.from.id;
+        const data = callbackQuery.data;
+
+        if (data === 'check_membership') {
+            try {
+                const isMember = await isUserInChannel(userId);
+                
+                if (isMember) {
+                    // اگر عضو شد، نمایش دکمه بازی
+                    const welcomeText = `✅ Thanks for joining!\n\nClick below to play **Math Battle**:`;
+                    const gameOptions = {
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [[
+                                { text: '🚀 Play Game!', web_app: { url: 'https://math-battle.momis.studio' } }
+                            ]]
+                        }
+                    };
+                    
+                    await bot.sendMessage(chatId, welcomeText, gameOptions);
+                    await bot.answerCallbackQuery(callbackQuery.id, { text: 'Membership verified!' });
+                } else {
+                    // اگر هنوز عضو نشده
+                    await bot.answerCallbackQuery(callbackQuery.id, { 
+                        text: 'Please join the channel first!', 
+                        show_alert: true 
+                    });
+                }
+            } catch (error) {
+                logger.error(`Membership check failed: ${error.message}`);
+                await bot.answerCallbackQuery(callbackQuery.id, {
+                    text: 'Error verifying membership. Please try again.',
+                    show_alert: true
+                });
+            }
+        }
+    });
+
     logger.info('Telegram Bot initialized and is now listening for commands...');
+}
+
+// --- Channel Membership Check ---
+async function isUserInChannel(userId) {
+    const CHANNEL_ID = '@MOMIS_studio';
+    const GROUP_ID = '@MOMIS_community';
+    try {
+        const member1 = await bot.getChatMember(CHANNEL_ID, userId);
+        const member2 = await bot.getChatMember(GROUP_ID, userId);
+        return ['member', 'administrator', 'creator'].includes(member1.status) &&
+            ['member', 'administrator', 'creator'].includes(member2.status) ;
+    } catch (error) {
+        logger.error(`Failed to check channel membership for ${userId}: ${error.message}`);
+        return false;
+    }
 }
 
 module.exports = {
