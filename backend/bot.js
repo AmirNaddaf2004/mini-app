@@ -91,9 +91,9 @@ function startListening() {
                 parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: [[
-                        { text: '📢 Join Community Group', url: groupLink },
-                        { text: '📢 Join Channel', url: channelLink },
-                        { text: '✅ I Joined', callback_data: 'check_membership' }
+                        { text: '📢 Join Community Group', url: groupLink }],
+                        [{ text: '📢 Join Channel', url: channelLink }],
+                        [{ text: '✅ I Joined', callback_data: 'check_membership' }
                     ]]
                 }
             };
@@ -113,14 +113,6 @@ function startListening() {
             logger.error(`Error in /start handler: ${error.message}`);
             await bot.sendMessage(chatId, '❌ An error occurred. Please try again later.');
         }
-    });
-
-    // Activate polling to listen for messages
-    bot.startPolling();
-
-    bot.on('polling_error', (error) => {
-        // This prevents the bot from crashing on minor polling errors
-        logger.error(`Telegram Polling Error: ${error.message}`);
     });
 
     // هندلر برای بررسی مجدد عضویت
@@ -162,6 +154,14 @@ function startListening() {
                 });
             }
         }
+    });
+
+    // Activate polling to listen for messages
+    bot.startPolling();
+
+    bot.on('polling_error', (error) => {
+        // This prevents the bot from crashing on minor polling errors
+        logger.error(`Telegram Polling Error: ${error.message}`);
     });
 
     logger.info('Telegram Bot initialized and is now listening for commands...');
