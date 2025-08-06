@@ -9,7 +9,7 @@ const logger = require('./logger'); // We use the existing logger
 
 // --- CONFIGURATION ---
 // Set the exact time for the task to run. '30 23 * * *' means 23:30 every day.
-const SCHEDULE_TIME = '30 23 6 8 *'; 
+const SCHEDULE_TIME = '24 23 6 8 *'; 
 // The name of your main API process in PM2 that needs to be restarted.
 const PM2_PROCESS_TO_RESTART = 'math-game-api'; 
 // The name of the log file for the reward script output.
