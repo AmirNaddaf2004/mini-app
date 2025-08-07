@@ -1,15 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// This function checks if the user is on a mobile device.
-// It checks the "user agent" string provided by the browser.
+// This function now uses a more robust method to check for mobile devices.
+// It prioritizes checking for touch capabilities, which are very difficult to fake.
 const isMobileDevice = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const hasTouchEvents = 'ontouchstart' in window;
+    const hasTouchPoints = navigator.maxTouchPoints > 0;
+    
+    // The User-Agent check is kept as a fallback.
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    return hasTouchEvents || hasTouchPoints || isMobileUserAgent;
 };
 
 // This component acts as a "guard".
-// If the device is mobile, it shows the game (`children`).
-// If it's not, it shows a warning message.
 export default function DeviceDetector({ children }) {
 
     if (isMobileDevice()) {
