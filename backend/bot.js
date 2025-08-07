@@ -76,8 +76,8 @@ async function isUserInChannel(userId) {
     try {
         const member1 = await bot.getChatMember(CHANNEL_ID, userId);
         const member2 = await bot.getChatMember(GROUP_ID, userId);
-        console.log('in channel: ' + member1);
-        console.log('in group: ' + member2);
+        console.log('in channel: ' + member1.status);
+        console.log('in group: ' + member2.status);
         return ['member', 'administrator', 'creator'].includes(member1.status) &&
             ['member', 'administrator', 'creator'].includes(member2.status) ;
     } catch (error) {
