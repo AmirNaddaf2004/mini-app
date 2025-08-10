@@ -12,6 +12,7 @@ import TimerCircle from "./components/TimerCircle";
 import Leaderboard from "./components/Leaderboard";
 import DefaultAvatar from "./assets/default-avatar.png";
 import GameLobby from "./components/GameLobby";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ROUND_TIME = 15;
 const API_BASE = "/api";
