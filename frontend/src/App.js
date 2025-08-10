@@ -338,6 +338,7 @@ function App() {
         // اگر view برابر با 'auth' نباشد، چیزی نمایش نده
         if (view !== "auth") return null;
 
+        console.log("membership: " + membershipRequired);
         // محتوای اصلی صفحه با انیمیشن‌ها
         const content = (
             <>
@@ -347,7 +348,7 @@ function App() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    Color Memory
+                    Math Battle
                 </motion.h1>
 
                 {/* اگر خطای عضویت وجود داشت، پیام و دکمه‌های عضویت را نمایش بده */}
