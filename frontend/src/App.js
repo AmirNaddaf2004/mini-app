@@ -88,15 +88,9 @@ function App() {
                 body: JSON.stringify({ initData }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData?.message || "Authentication failed");
-            }
-
             const data = await response.json();
 
             if (response.status === 403 && data.membership_required) {
-                console.log("not in channel");
                 setMembershipRequired(true); // حالت نمایش پیام عضویت را فعال می‌کنیم
                 setView("auth"); // در همین صفحه باقی می‌مانیم
                 setError(data.message); // پیام خطا را از سرور می‌گیریم
@@ -339,7 +333,6 @@ function App() {
         // اگر view برابر با 'auth' نباشد، چیزی نمایش نده
         if (view !== "auth") return null;
 
-        console.log("membership: " + membershipRequired);
         // محتوای اصلی صفحه با انیمیشن‌ها
         const content = (
             <>
