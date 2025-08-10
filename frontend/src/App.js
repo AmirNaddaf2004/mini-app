@@ -27,6 +27,7 @@ function App() {
     const [leaderboardKey, setLeaderboardKey] = useState(Date.now());
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
+    const [membershipRequired, setMembershipRequired] = useState(false);
     const [token, setToken] = useState(
         () => localStorage.getItem("jwtToken") || null
     );
@@ -64,15 +65,16 @@ function App() {
         try {
             setAuthLoading(true);
             setError(null);
+            setMembershipRequired(false);
 
-            if (!window.Telegram?.WebApp) {
-                console.log(
-                    "Running in non-Telegram environment, skipping authentication"
-                );
-                setIsAuthenticated(true);
-                setView("home");
-                return;
-            }
+            // if (!window.Telegram?.WebApp) {
+            //     console.log(
+            //         "Running in non-Telegram environment, skipping authentication"
+            //     );
+            //     setIsAuthenticated(true);
+            //     setView("home");
+            //     return;
+            // }
 
             const initData = window.Telegram.WebApp.initData || "";
             if (!initData) {
@@ -92,8 +94,14 @@ function App() {
 
             const data = await response.json();
 
-            if (!data?.valid) {
-                throw new Error(data?.message || "Invalid Telegram user");
+            if (response.status === 403 && data.membership_required) {
+                setError(data.message); // پیام خطا را از سرور می‌گیریم
+                setMembershipRequired(true); // حالت نمایش پیام عضویت را فعال می‌کنیم
+                setView("auth"); // در همین صفحه باقی می‌مانیم
+                return; // از ادامه تابع خارج می‌شویم
+            }
+            if (!response.ok || !data.valid) {
+                throw new Error(data.message || "Authentication failed");
             }
 
             setToken(data.token);
@@ -326,33 +334,98 @@ function App() {
     }, []);
 
     const authContent = useMemo(() => {
+        // اگر view برابر با 'auth' نباشد، چیزی نمایش نده
         if (view !== "auth") return null;
 
-        return (
-            <div className="flex flex-col items-center gap-6 w-full max-w-md">
-                <h2 className="text-2xl font-bold">Welcome to Math Game</h2>
-                <p className="text-center">
-                    {window.Telegram?.WebApp
-                        ? "Please authenticate with Telegram to play the game."
-                        : "This game is designed to run inside Telegram. Please open it in Telegram to play."}
-                </p>
-                {error && <p className="text-red-300">{error}</p>}
-                {window.Telegram?.WebApp && (
-                    <button
-                        onClick={authenticateUser}
-                        disabled={authLoading}
-                        className={`px-6 py-3 bg-white text-indigo-600 rounded-xl text-xl font-bold ${
-                            authLoading ? "opacity-50" : "hover:bg-gray-100"
-                        }`}
+        // محتوای اصلی صفحه با انیمیشن‌ها
+        const content = (
+            <>
+                <motion.h1
+                    className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    Color Memory
+                </motion.h1>
+
+                {/* اگر خطای عضویت وجود داشت، پیام و دکمه‌های عضویت را نمایش بده */}
+                {membershipRequired ? (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="w-full max-w-xs"
                     >
-                        {authLoading
-                            ? "Authenticating..."
-                            : "Authenticate with Telegram"}
-                    </button>
+                        <p className="text-lg text-red-400 mb-4">
+                            {error || "Please join our channels to play."}
+                        </p>
+                        <div className="space-y-3">
+                            {/* **مهم:** این لینک‌ها را با مقادیر واقعی خود از فایل .env یا ecosystem.config.js جایگزین کنید */}
+                            <a
+                                href="https://t.me/MOMIS_studio"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors"
+                            >
+                                📢 Join Channel
+                            </a>
+                            <a
+                                href="https://t.me/MOMIS_community"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors"
+                            >
+                                💬 Join Group
+                            </a>
+                            <button
+                                onClick={authenticateUser}
+                                className="mt-4 w-full py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition-colors"
+                            >
+                                ✅ I've Joined, Try Again
+                            </button>
+                        </div>
+                    </motion.div>
+                ) : (
+                    // در غیر این صورت، حالت عادی ورود را نمایش بده
+                    <>
+                        <motion.p
+                            className="text-lg text-gray-300 mb-8"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                        >
+                            Ready to challenge your mind?
+                        </motion.p>
+
+                        {authLoading ? (
+                            <p className="text-lg text-gray-400 animate-pulse">
+                                Connecting...
+                            </p>
+                        ) : (
+                            <motion.button
+                                onClick={authenticateUser}
+                                className="px-8 py-3 bg-blue-600 text-white rounded-xl text-xl font-bold shadow-lg hover:bg-blue-700 transition-all duration-300"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                Login with Telegram
+                            </motion.button>
+                        )}
+                    </>
                 )}
+                {/* نمایش خطاهای عمومی دیگر */}
+                {!membershipRequired && error && (
+                    <p className="text-red-400 mt-4">{error}</p>
+                )}
+            </>
+        );
+
+        return (
+            <div className="flex flex-col items-center justify-center text-center h-screen px-4">
+                {content}
             </div>
         );
-    }, [view, authLoading, error, authenticateUser]);
+    }, [view, authLoading, error, authenticateUser, membershipRequired]);
 
     // NEW: This content will render the Game Lobby
     const lobbyContent = useMemo(() => {

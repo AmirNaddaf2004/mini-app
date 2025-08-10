@@ -1,5 +1,4 @@
-// backend/bot.js
-
+'use strict';
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const logger = require('./logger');
@@ -9,30 +8,62 @@ if (!token) {
     throw new Error('Telegram BOT_TOKEN is not configured in .env file.');
 }
 
-// Create the bot instance WITHOUT starting it
+// خواندن متغیرها از فایل تنظیمات برای انعطاف‌پذیری بیشتر
+const REQUIRED_CHANNEL_ID = process.env.REQUIRED_CHANNEL_ID;
+const REQUIRED_GROUP_ID = process.env.REQUIRED_GROUP_ID;
+const GROUP_INVITE_LINK = process.env.GROUP_INVITE_LINK;
+const WEB_APP_URL = 'https://math-battle.momis.studio'; // آدرس بازی
+
 const bot = new TelegramBot(token);
 
-// --- Message Sending Functions ---
-// These functions can be safely imported and used by any script.
-// Find and replace this function in backend/bot.js
+// --- Channel Membership Check (Improved with Logging) ---
+async function isUserMember(userId) {
+    // **مهم:** مطمئن شوید این شناسه‌ها در فایل .env یا ecosystem.config.js شما تعریف شده‌اند
+    const CHANNEL_ID = process.env.REQUIRED_CHANNEL_ID || '@MOMIS_studio';
+    const GROUP_ID = process.env.REQUIRED_GROUP_ID || '@MOMIS_community';
+    
+    try {
+        const validStatuses = ['member', 'administrator', 'creator'];
 
+        const [channelMember, groupMember] = await Promise.all([
+            bot.getChatMember(CHANNEL_ID, userId),
+            bot.getChatMember(GROUP_ID, userId)
+        ]);
+
+        // --- لاگ تشخیصی برای دیدن وضعیت دقیق کاربر ---
+        logger.info(`Membership check for user ${userId}: Channel status='${channelMember.status}', Group status='${groupMember.status}'`);
+        // ---
+
+        const inChannel = validStatuses.includes(channelMember.status);
+        const inGroup = validStatuses.includes(groupMember.status);
+
+        return inChannel && inGroup;
+
+    } catch (error) {
+        // اگر کاربر عضو نباشد، تلگرام خطای "user not found" می‌دهد که طبیعی است
+        if (error.response?.body?.description.includes('user not found')) {
+            logger.warn(`User ${userId} not found in channel/group, considered as not a member.`);
+            return false;
+        }
+        // سایر خطاها را به عنوان مشکل در نظر می‌گیریم
+        logger.error(`Failed to check channel membership for ${userId}: ${error.message}`);
+        return false;
+    }
+}
+
+// این تابع بدون تغییر باقی می‌ماند
 async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
-    const message = 
-`🏆 *Congratulations, ${userName}!* 🏆
+    const message = `🏆 *Congratulations, ${userName}!* 🏆
 
-You are the top player in the last tournament!
+You were a top player in the last tournament!
 
 *Your final score:* *${score}*
 
-You have earned a special reward. Click the button below to claim your prize.
-
----
-*Please note: The tournament has officially ended. New scores will not affect the final results.*`;
-
+You have earned a special reward. Click the button below to claim your prize.`;
     const options = {
         parse_mode: 'Markdown',
         reply_markup: {
-            inline_keyboard: [[{ text: '🎁 Claim Your Reward', url: rewardLink }]]
+            inline_keyboard: [[{ text: "🎁 Claim Your Reward", url: rewardLink }]]
         }
     };
     try {
@@ -43,22 +74,19 @@ You have earned a special reward. Click the button below to claim your prize.
     }
 }
 
-// Find and replace this function in backend/bot.js
-
+// این تابع بدون تغییر باقی می‌ماند
 async function sendConsolationMessage(telegramId, userName, topScore) {
-    const message = 
-`👋 Hello, *${userName}*!
+    const message = `👋 Hello, *${userName}*!
 
-Thank you for participating in our latest tournament. This time you didn't make it to be the top player
+Thank you for participating in our latest tournament.
 
 *Your highest score:* *${topScore}*
 
-The tournament has now officially ended. Keep practicing for the next event!`;
-
+The tournament has now ended. Keep practicing for the next event!`;
     const options = {
         parse_mode: 'Markdown',
         reply_markup: {
-            inline_keyboard: [[{ text: '🚀 Play in Free mode and practice!', web_app: { url: 'https://math-battle.momis.studio' } }]]
+            inline_keyboard: [[{ text: "🚀 Practice in Free Mode!", web_app: { url: WEB_APP_URL } }]]
         }
     };
     try {
@@ -69,132 +97,94 @@ The tournament has now officially ended. Keep practicing for the next event!`;
     }
 }
 
-// --- Channel Membership Check ---
-async function isUserInChannel(userId) {
-    const CHANNEL_ID = '@MOMIS_studio';
-    const GROUP_ID = '@MOMIS_community';
-    try {
-        const member1 = await bot.getChatMember(CHANNEL_ID, userId);
-        const member2 = await bot.getChatMember(GROUP_ID, userId);
-        console.log('in channel: ' + member1.status);
-        console.log('in group: ' + member2.status);
-        return ['member', 'administrator', 'creator'].includes(member1.status) &&
-            ['member', 'administrator', 'creator'].includes(member2.status) ;
-    } catch (error) {
-        logger.error(`Failed to check channel membership for ${userId}: ${error.message}`);
-        return false;
-    }
-}
-
-// --- Bot Listening Function ---
-// This function will ONLY be called by our long-running bot process.
 
 function startListening() {
-    bot.onText(/\/start/, async(msg) => {
-        try {
-        const chatId = msg.chat.id;
+    bot.onText(/\/start/, async (msg) => {
         const userId = msg.from.id;
         const firstName = msg.from.first_name;
 
-        // بررسی عضویت در کانال
-        const isMember = await isUserInChannel(userId);
-        
-        if (!isMember) {
-            // ارسال پیام عضویت در کانال
-            const channelLink = 'https://t.me/MOMIS_studio'; 
-            const groupLink = 'https://t.me/MOMIS_community'; 
-            const message = `👋 Hello, *${firstName}*!\n\nTo play Math Battle, please join our community group and channel first then /start again.`;
+        try {
+            const isMember = await isUserMember(userId);
             
+            if (!isMember) {
+                // ارسال پیام الزام به عضویت با دکمه‌های بهبودیافته
+                const channelLink = `https://t.me/${(process.env.REQUIRED_CHANNEL_ID || '@MOMIS_studio').replace('@', '')}`;
+                const groupLink = process.env.GROUP_INVITE_LINK || 'https://t.me/MOMIS_community';
+                const message = `👋 Hello, *${firstName}*!\n\nTo play the game, please join our community channels first, then click the button below.`;
+                
+                const options = {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '📢 Join Channel', url: channelLink }],
+                            [{ text: '💬 Join Community Group', url: groupLink }],
+                            [{ text: '✅ I\'ve Joined!', callback_data: 'check_membership' }] // دکمه جدید
+                        ]
+                    }
+                };
+                
+                return await bot.sendMessage(userId, message, options);
+            }
+
+            // اگر کاربر از قبل عضو بود، پیام خوش‌آمدگویی را ارسال کن
+            const welcomeText = `🎉 Welcome, *${firstName}*!\n\nReady to test your math skills? Click the button below to play **Math Battle**!`;
             const options = {
-                parse_mode: 'Markdown',
+                parse_mode: "Markdown",
                 reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '📢 Join Community Group', url: groupLink }],
-                        [{ text: '📢 Join Channel', url: channelLink }]
-                        // , [{ text: '✅ I Joined', url: `https://t.me/Momis_game_bot?start` }]
-                        // ,[{ text: '✅ I Joined', callback_data: 'check_membership' }]
-                    ]
+                    inline_keyboard: [[{ text: "🚀 Play Game!", web_app: { url: 'https://math-battle.momis.studio' } }]]
                 }
             };
-            
-            return await bot.sendMessage(chatId, message, options);
-        }
+            await bot.sendMessage(userId, welcomeText, options);
 
-        const welcomeText = `🎉 Welcome, *${msg.from.first_name}*!\n\nClick the button below to play **Math Battle**!`;
-        const options = {
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [[{ text: '🚀 Play Game!', web_app: { url: 'https://math-battle.momis.studio' } }]]
-            }
-        };
-        await bot.sendMessage(msg.chat.id, welcomeText, options);}
-        catch (error) {
+        } catch (error) {
             logger.error(`Error in /start handler: ${error.message}`);
-            await bot.sendMessage(chatId, '❌ An error occurred. Please try again later.');
+            await bot.sendMessage(msg.chat.id, '❌ An error occurred. Please try again later.');
         }
     });
 
-    // هندلر برای بررسی مجدد عضویت
+    // مدیریت دکمه "عضو شدم"
     bot.on('callback_query', async (callbackQuery) => {
-        logger.info("callback recieved");
-
-        const chatId = callbackQuery.message.chat.id;
+        const msg = callbackQuery.message;
         const userId = callbackQuery.from.id;
-        const data = callbackQuery.data;
-        const queryId = callbackQuery.id;
 
+        if (callbackQuery.data === 'check_membership') {
+            const isMember = await isUserMember(userId);
 
-        // Acknowledge the callback query to remove the loading indicator on the client side
-        await bot.answerCallbackQuery(queryId, { text: 'Processing...' }); 
-
-        if (data === 'check_membership') {
-            try {
-                const isMember = await isUserInChannel(userId);
-                
-                if (isMember) {
-                    // اگر عضو شد، نمایش دکمه بازی
-                    const welcomeText = `✅ Thanks for joining!\n\nClick below to play **Math Battle**:`;
-                    const gameOptions = {
-                        parse_mode: 'Markdown',
-                        reply_markup: {
-                            inline_keyboard: [[
-                                { text: '🚀 Play Game!', web_app: { url: 'https://math-battle.momis.studio' } }
-                            ]]
-                        }
-                    };
-                    
-                    await bot.sendMessage(chatId, welcomeText, gameOptions);
-                    await bot.answerCallbackQuery(callbackQuery.id, { text: 'Membership verified!' });
-                } else {
-                    // اگر هنوز عضو نشده
-                    await bot.answerCallbackQuery(callbackQuery.id, { 
-                        text: 'Please join the channel first!', 
-                        show_alert: true 
-                    });
-                }
-            } catch (error) {
-                logger.error(`Membership check failed: ${error.message}`);
+            if (isMember) {
+                // اگر عضو شده بود، پیام قبلی را ویرایش کرده و به او تبریک بگو
+                const successText = `✅ **Thank you, ${callbackQuery.from.first_name}!**\n\nYou're all set. Click the button below to start playing!`;
+                const playOptions = {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [[{ text: '🚀 Play Game!', web_app: { url: 'https://math-battle.momis.studio' } }]]
+                    }
+                };
+                // ویرایش پیام به جای ارسال پیام جدید، تجربه بهتری است
+                await bot.editMessageText(successText, {
+                    chat_id: msg.chat.id,
+                    message_id: msg.message_id,
+                    ...playOptions
+                });
+            } else {
+                // اگر هنوز عضو نشده بود، یک پیام هشدار به او نشان بده
                 await bot.answerCallbackQuery(callbackQuery.id, {
-                    text: 'Error verifying membership. Please try again.',
+                    text: "You haven't joined our channel and group yet. Please join both first.",
                     show_alert: true
                 });
             }
         }
     });
 
-    // Activate polling to listen for messages
     bot.startPolling();
-
-    bot.on('polling_error', (error) => {
-        // This prevents the bot from crashing on minor polling errors
-        logger.error(`Telegram Polling Error: ${error.message}`);
-    });
-
-    logger.info('Telegram Bot initialized and is now listening for commands...');
+    bot.on("polling_error", (error) => logger.error(`Telegram Polling Error: ${error.message}`));
+    logger.info("Telegram Bot initialized and is now listening for commands...");
 }
 
+// **مهم:** آبجکت bot و تابع isUserMember را هم export کنید
 module.exports = {
+    bot,
+    isUserMember,
     sendWinnerMessage,
     sendConsolationMessage,
-    startListening, // Export the new function
+    startListening,
 };
