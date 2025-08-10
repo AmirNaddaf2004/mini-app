@@ -96,9 +96,10 @@ function App() {
             const data = await response.json();
 
             if (response.status === 403 && data.membership_required) {
-                setError(data.message); // پیام خطا را از سرور می‌گیریم
+                console.log("not in channel");
                 setMembershipRequired(true); // حالت نمایش پیام عضویت را فعال می‌کنیم
                 setView("auth"); // در همین صفحه باقی می‌مانیم
+                setError(data.message); // پیام خطا را از سرور می‌گیریم
                 return; // از ادامه تابع خارج می‌شویم
             }
             if (!response.ok || !data.valid) {
