@@ -14,8 +14,10 @@ import DefaultAvatar from "./assets/default-avatar.png";
 import GameLobby from "./components/GameLobby";
 import { motion, AnimatePresence } from "framer-motion";
 
+
 const ROUND_TIME = 15;
 const API_BASE = "/api";
+const tg = window.Telegram?.WebApp;
 
 function App() {
     const [problem, setProblem] = useState(null);
@@ -29,8 +31,7 @@ function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
     const [membershipRequired, setMembershipRequired] = useState(false);
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("userData");
+
     
     const [token, setToken] = useState(
         () => localStorage.getItem("jwtToken") || null
@@ -301,20 +302,45 @@ function App() {
         e.target.onerror = null;
     }, []);
 
+    // ✨ useEffect اصلی با منطق کاملاً بازنویسی شده و بهینه
     useEffect(() => {
-        const initAuth = async () => {
-            if (token && userData) {
-                setIsAuthenticated(true);
-                setView("lobby");
-                setAuthLoading(false);
-            } else {
+        const initApp = async () => {
+            // // اولویت اول: آیا توکن و داده معتبر در حافظه وجود دارد؟
+            // const storedToken = localStorage.getItem("jwtToken");
+            // const storedUserData = localStorage.getItem("userData");
+
+            // if (storedToken && storedUserData) {
+            //     console.log("Authentication from localStorage.");
+            //     setToken(storedToken);
+            //     setUserData(JSON.parse(storedUserData));
+            //     setIsAuthenticated(true);
+            //     setView("lobby");
+            //     setAuthLoading(false);
+            //     return; // <-- پایان فرآیند
+            // }
+
+            // اولویت دوم: آیا در محیط تلگرام هستیم و داده برای احراز هویت داریم؟
+            if (tg && tg.initData) {
+                console.log("Authenticating with Telegram data...");
+                // تابع authenticateUser فقط همین یک بار فراخوانی می‌شود
                 await authenticateUser();
+                return; // <-- پایان فرآیند
             }
+
+            // // حالت بازگشتی: برای محیط تست خارج از تلگرام
+            // console.warn("Running in non-Telegram development mode.");
+            // setIsAuthenticated(true);
+            // setView("lobby");
+            // setAuthLoading(false);
         };
 
-        initAuth();
-        return () => clearResources();
-    }, [authenticateUser, clearResources, token, userData]);
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
+
+        initApp();
+    }, [authenticateUser]); // فقط به authenticateUser وابسته است
 
     useEffect(() => {
         if (error) {
