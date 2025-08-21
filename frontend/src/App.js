@@ -553,7 +553,7 @@ function App() {
             <img
                 src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
                 alt="Team Logo"
-                className="absolute bottom-4 right-4 w-16 opacity-50 pointer-events-none z-0"
+                className="absolute bottom-4 right-4 w-12 opacity-50 pointer-events-none z-0"
             />
 
             {/* Layer 2: The Content container. */}
