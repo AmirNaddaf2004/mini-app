@@ -14,7 +14,6 @@ import DefaultAvatar from "./assets/default-avatar.png";
 import GameLobby from "./components/GameLobby";
 import { motion, AnimatePresence } from "framer-motion";
 
-
 const ROUND_TIME = 15;
 const API_BASE = "/api";
 const tg = window.Telegram?.WebApp;
@@ -32,7 +31,6 @@ function App() {
     const [authLoading, setAuthLoading] = useState(true);
     const [membershipRequired, setMembershipRequired] = useState(false);
 
-    
     const [token, setToken] = useState(
         () => localStorage.getItem("jwtToken") || null
     );
@@ -547,40 +545,46 @@ function App() {
     );
 
     return (
-        <div className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-4">
-            <DeviceDetector>
-                {/* نمایش خطا */}
-                {error && (
-                    <div
-                        className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-md shadow-lg z-50 max-w-md text-center animate-fade-in"
-                        role="alert"
-                    >
-                        {error}
-                        <button
-                            onClick={() => setError(null)}
-                            className="ml-2 text-white hover:text-gray-200"
-                            aria-label="Close error message"
+        // Layer 1: The main container. It's 'relative' so we can position the logo inside it.
+        // It only handles the background gradient.
+        <div className="relative min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600">
+            {/* The Logo is now a direct child of the background layer. */}
+            {/* It stays in the corner with a low z-index, acting as a watermark. */}
+            <img
+                src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
+                alt="Team Logo"
+                className="absolute bottom-4 right-4 w-24 opacity-50 pointer-events-none z-0"
+            />
+
+            {/* Layer 2: The Content container. */}
+            {/* This container holds ALL your interactive components. */}
+            {/* It's centered and has a higher z-index to ensure it always sits ON TOP of the logo. */}
+            <div className="relative min-h-screen flex flex-col items-center justify-center text-white p-4 z-10">
+                <DeviceDetector>
+                    {/* Error display */}
+                    {error && (
+                        <div
+                            className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-md shadow-lg z-50 max-w-md text-center animate-fade-in"
+                            role="alert"
                         >
-                            &times;
-                        </button>
-                    </div>
-                )}
+                            {error}
+                            <button
+                                onClick={() => setError(null)}
+                                className="ml-2 text-white hover:text-gray-200"
+                                aria-label="Close error message"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                    )}
 
-                {authContent}
-                {lobbyContent}
-                {gameContent}
-                {leaderboardContent}
-
-                {/* نمایش لوگو فقط در صفحه بازی */}
-                {view === "game" && (
-                    <img
-                        src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
-                        alt="Team Logo"
-                        className="absolute bottom-4 right-4 w-20 h-20 object-contain opacity-40 pointer-events-none z-0"
-                        loading="lazy"
-                    />
-                )}
-            </DeviceDetector>
+                    {/* All your app views are safely inside this top layer */}
+                    {authContent}
+                    {lobbyContent}
+                    {gameContent}
+                    {leaderboardContent}
+                </DeviceDetector>
+            </div>
         </div>
     );
 }
