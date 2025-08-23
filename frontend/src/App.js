@@ -193,7 +193,7 @@ function App() {
                 const data = await response.json();
 
                 if (data.status === "continue") {
-                    setProblem(data.problem);
+                    setProblem(data.problemImage);
                     setScore(data.score);
                     startLocalTimer(data.time_left);
                 } else {
@@ -266,7 +266,7 @@ function App() {
                     throw new Error(data?.message || "Invalid server response");
                 }
 
-                setProblem(data.problem);
+                setProblem(data.problemImage);
                 startLocalTimer(data.time_left ?? ROUND_TIME);
                 setScore(data.score ?? 0);
                 setView("game"); // Set the view to 'game' to start playing
@@ -491,7 +491,7 @@ function App() {
                     )}
                 </div>
 
-                <ProblemCard text={problem} />
+                <ProblemCard imageData={problem} />
                 <TimerCircle total={ROUND_TIME} left={timeLeft} />
                 <AnswerButtons
                     onAnswer={submitAnswer}

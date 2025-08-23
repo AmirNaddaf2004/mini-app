@@ -5,6 +5,7 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 const { rewardUser } = require("./ontonApi");
 const logger = require("./logger");
+const { createProblemImage } = require("./imageGenerator"); // فرض بر این است که فایل در همان پوشه است
 
 const path = require("path");
 const mathEngine = require("./math_engine.js");
@@ -192,6 +193,8 @@ class MathGame {
             player.current_problem = problem;
             player.current_answer = is_correct;
 
+            const problemImage = createProblemImage(problem);
+
             this.runTimer(playerId);
 
             // This single log will now correctly show the event ID after it has been set.
@@ -204,7 +207,7 @@ class MathGame {
             return {
                 status: "success",
                 player_id: playerId,
-                problem: problem,
+                problemImage: problemImage,
                 time_left: player.time_left,
                 score: player.score,
                 top_score: player.top_score,
@@ -352,10 +355,12 @@ class MathGame {
 
             player.current_problem = problem;
             player.current_answer = answer;
+            
+            const problemImage = createProblemImage(problem);
 
             return {
                 status: "continue",
-                problem: problem,
+                problemImage: problemImage,
                 time_left: player.time_left,
                 score: player.score,
                 feedback: is_correct ? "correct" : "wrong",
@@ -392,7 +397,7 @@ const authenticateToken = (req, res, next) => {
 app.use(express.static(path.join(__dirname, "../frontend/build")));
 
 // API Routes
-app.post("/api/telegram-auth", async(req, res) => {
+app.post("/api/telegram-auth", async (req, res) => {
     try {
         const { initData } = req.body;
         if (!initData) {
@@ -551,7 +556,10 @@ app.get("/api/leaderboard", authenticateToken, async (req, res) => {
         } else {
             whereCondition.eventId = null;
         }
-        logger.info(`Fetching leaderboard for user ${currentUserTelegramId} with condition:`, whereCondition);
+        logger.info(
+            `Fetching leaderboard for user ${currentUserTelegramId} with condition:`,
+            whereCondition
+        );
 
         // مرحله ۱: بهترین امتیاز *تمام* کاربران را بر اساس شرط پیدا می‌کنیم (بدون limit)
         const allScores = await Score.findAll({
@@ -588,12 +596,13 @@ app.get("/api/leaderboard", authenticateToken, async (req, res) => {
 
         // مرحله ۴: اطلاعات کامل (نام، عکس و...) را برای کاربران مورد نیاز می‌گیریم
         const userIdsToFetch = [
-            ...new Set([ // با Set از ارسال ID تکراری جلوگیری می‌کنیم
+            ...new Set([
+                // با Set از ارسال ID تکراری جلوگیری می‌کنیم
                 ...top5Players.map((p) => p.userTelegramId),
                 ...(currentUserData ? [currentUserData.userTelegramId] : []), // اگر کاربر فعلی رکوردی داشت، ID او را هم اضافه کن
             ]),
         ];
-        
+
         const users = await User.findAll({
             where: { telegramId: userIdsToFetch },
             raw: true,
@@ -617,7 +626,7 @@ app.get("/api/leaderboard", authenticateToken, async (req, res) => {
                 rank: playerData.rank,
             };
         };
-        
+
         // مرحله ۵: ساخت آبجکت نهایی برای ارسال به فرانت‌اند
         res.json({
             status: "success",
@@ -626,7 +635,6 @@ app.get("/api/leaderboard", authenticateToken, async (req, res) => {
                 currentUser: formatPlayer(currentUserData), // اطلاعات کاربر فعلی
             },
         });
-
     } catch (e) {
         logger.error(`Leaderboard error: ${e.message}`, { stack: e.stack });
         res.status(500).json({
