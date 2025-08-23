@@ -148,7 +148,7 @@ function generate(score = 0) {
         
         // Ensure the false result is never negative or the same as the correct one
         if (final_result <= 0) final_result = problemData.result + 1;
-        if (final_result === result) final_result += 1; // 'result' is not defined here, should be problemData.result
+        if (final_result === problemData.result) final_result += 1; // 'result' is not defined here, should be problemData.result
     }
 
     // Return the final math problem object
