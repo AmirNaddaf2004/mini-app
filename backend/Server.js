@@ -13,7 +13,7 @@ const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
 
 const { User, Score, Reward, sequelize } = require("./DataBase/models");
-const MaxTime = 15;
+const MaxTime = 10;
 const RewardTime = 2;
 const PenaltyTime = 6;
 

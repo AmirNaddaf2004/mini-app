@@ -14,7 +14,7 @@ import DefaultAvatar from "./assets/default-avatar.png";
 import GameLobby from "./components/GameLobby";
 import { motion, AnimatePresence } from "framer-motion";
 
-const ROUND_TIME = 15;
+const ROUND_TIME = 10;
 const API_BASE = "/api";
 const tg = window.Telegram?.WebApp;
 
