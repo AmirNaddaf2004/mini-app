@@ -25,63 +25,82 @@ const getOptimalFontSizeForMath = (ctx, text, maxWidth) => {
     }
     return fontSize;
 };
-// Main function to generate the problem card image
 function createProblemImage(problem) {
-    const { a, op, b, result } = problem;
     const width = 300;
     const height = 80;
-
     const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
 
-    // Background color (can be transparent or styled)
-    // For this example, let's keep it transparent to match the frontend card style.
+    ctx.fillStyle = '#1f2937';
+    ctx.textBaseline = 'middle'; // Align text vertically to the middle
 
-    ctx.fillStyle = "#1f2937"; // slate-800
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    let problemString;
-
-    // ▼▼▼ منطق شرطی برای تشخیص نوع سوال ▼▼▼
+    // --- 1. Handle Text CAPTCHA ---
     if (problem.isTextCaptcha) {
-        // --- Render Text CAPTCHA ---
-        problemString = problem.text;
-        const optimalFontSize = getOptimalFontSizeForText(
-            ctx,
-            problemString,
-            width - 20
-        );
+        ctx.textAlign = 'center';
+        const problemString = problem.text;
+        const optimalFontSize = getOptimalFontSizeForText(ctx, problemString, width - 20);
         ctx.font = `bold ${optimalFontSize}px "DejaVu Sans"`;
         ctx.fillText(problemString, width / 2, height / 2);
+
     } else {
-        // --- Render Math Problem (including humanCheck comparison) ---
-        let { a, op, b, result } = problem;
+        // --- 2. Handle ALL Math Problems ---
+        const { a, op, b, result } = problem;
 
-        // Handle different problem formats
-        if (op === "√") {
-            problemString = `${op}${a} = ${result}`;
-        } else if (problem.isHumanCheck) {
-            problemString = `${a} ${op} ${b}`; // For 95 > 42, we don't show "= true"
+        // ▼▼▼ منطق جدید و اختصاصی برای نمایش توان ▼▼▼
+        if (op === '^') {
+            ctx.textAlign = 'left'; // Align left for manual positioning
+            
+            // Define the parts of the expression
+            const baseText = String(a);
+            const exponentText = String(b);
+            const resultText = ` = ${result}`;
+
+            // Calculate the ideal font size based on the full string
+            const baseFontSize = getOptimalFontSizeForMath(ctx, `${a}^${b} = ${result}`, width - 20);
+            const exponentFontSize = Math.floor(baseFontSize * 0.6); // Make exponent font smaller
+
+            // Measure the width of each part with its specific font
+            ctx.font = `bold ${baseFontSize}px "DejaVu Sans Mono"`;
+            const baseWidth = ctx.measureText(baseText).width;
+            const resultWidth = ctx.measureText(resultText).width;
+            
+            ctx.font = `bold ${exponentFontSize}px "DejaVu Sans Mono"`;
+            const exponentWidth = ctx.measureText(exponentText).width;
+            
+            // Calculate starting position to center the whole expression
+            const totalWidth = baseWidth + exponentWidth + resultWidth;
+            let currentX = (width - totalWidth) / 2;
+            const y = height / 2;
+
+            // Draw the parts one by one
+            ctx.font = `bold ${baseFontSize}px "DejaVu Sans Mono"`;
+            ctx.fillText(baseText, currentX, y);
+            currentX += baseWidth;
+
+            ctx.font = `bold ${exponentFontSize}px "DejaVu Sans Mono"`;
+            ctx.fillText(exponentText, currentX, y - (baseFontSize * 0.4)); // Move exponent up
+            currentX += exponentWidth;
+
+            ctx.font = `bold ${baseFontSize}px "DejaVu Sans Mono"`;
+            ctx.fillText(resultText, currentX, y);
+
         } else {
-            const displayOp = op.replace("*", "×").replace("/", "÷");
-            problemString = `${a} ${displayOp} ${b} = ${result}`;
+            // --- Standard rendering for all other math problems ---
+            ctx.textAlign = 'center';
+            let problemString;
+            
+            if (op === '√') {
+                problemString = `${op}${a} = ${result}`;
+            } else if (problem.isHumanCheck) {
+                problemString = `${a} ${op} ${b}`;
+            } else {
+                const displayOp = op.replace('*', '×').replace('/', '÷');
+                problemString = `${a} ${displayOp} ${b} = ${result}`;
+            }
+            
+            const optimalFontSize = getOptimalFontSizeForMath(ctx, problemString, width - 20);
+            ctx.font = `bold ${rand(optimalFontSize - 1, optimalFontSize + 1)}px "DejaVu Sans Mono"`;
+            ctx.fillText(problemString, width / 2, height / 2);
         }
-
-        const optimalFontSize = getOptimalFontSizeForMath(
-            ctx,
-            problemString,
-            width - 20
-        );
-        ctx.font = `bold ${rand(
-            optimalFontSize - 1,
-            optimalFontSize + 1
-        )}px "DejaVu Sans Mono"`;
-        ctx.fillText(problemString, width / 2, height / 2);
-    }
-
-    // Return the image as a Data URL (base64 encoded PNG)
-    return canvas.toDataURL();
-}
 
 module.exports = { createProblemImage };
