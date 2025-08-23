@@ -27,7 +27,7 @@ function App() {
     const [score, setScore] = useState(0);
     const [error, setError] = useState(null);
     const [leaderboardKey, setLeaderboardKey] = useState(Date.now());
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [Authenticated, setIsAuthenticated] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
     const [membershipRequired, setMembershipRequired] = useState(false);
 
