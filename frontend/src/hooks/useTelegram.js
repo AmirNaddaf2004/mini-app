@@ -14,8 +14,8 @@ export function useTelegram() {
     }, []);
 
     const platform = tg ? tg.platform : 'unknown';
-    // const isMobile = platform === 'android' || platform === 'ios';
-    const isMobile = true;
+    const isMobile = platform === 'android' || platform === 'ios';
+    // const isMobile = true;
 
     return {
         tg,        // آبجکت کامل WebApp برای دسترسی به سایر امکانات

@@ -48,7 +48,7 @@ app.use(cors(corsOptions));
 class Player {
     constructor(playerId, jwtPayload) {
         this.id = playerId;
-        this.jwtPayload = jwtPayload; // اطلاعات کاربر از توکن JWT
+        this.jwtPayload = jwtPayload; 
         this.score = 0;
         this.top_score = 0;
         this.time_left = MaxTime;
@@ -291,14 +291,13 @@ class MathGame {
                     status: "game_over",
                     final_score: player.score,
                     top_score: player.top_score,
-                    eventId: player.currentEventId, // <-- Add this line
+                    eventId: player.currentEventId, 
                 };
             }
 
             const is_correct = userAnswer === player.current_answer;
 
             if (is_correct) {
-                // منطق اصلی شما: جایزه زمانی برای پاسخ صحیح
                 player.time_left = Math.min(
                     MaxTime,
                     player.time_left + RewardTime
@@ -311,17 +310,13 @@ class MathGame {
                 // Then, start it again.
                 this.runTimer(playerId);
             } else {
-                // منطق اصلی شما: جریمه زمانی برای پاسخ غلط
                 player.time_left = Math.max(0, player.time_left - PenaltyTime);
             }
 
-            // فقط زمانی که زمان تمام شود، بازی به پایان می‌رسد
             if (player.time_left <= 0) {
                 player.game_active = false;
 
-                // حالا که بازی تمام شده، امتیاز نهایی را در دیتابیس ثبت می‌کنیم
                 if (player.score > 0) {
-                    // ثبت امتیاز به همراه شناسه رویداد فعلی
                     await Score.create({
                         score: player.score,
                         userTelegramId: userId,
@@ -336,7 +331,6 @@ class MathGame {
                     );
                 }
 
-                // بالاترین امتیاز را برای ارسال به فرانت‌اند آپدیت می‌کنیم
                 player.top_score = Math.max(player.top_score, player.score);
 
                 return {
@@ -348,7 +342,6 @@ class MathGame {
                 console.log(player.time_left, "looooooooooolo\n");
             }
 
-            // اگر بازی ادامه دارد، یک سوال جدید تولید کن
             const { problem, is_correct: answer } = mathEngine.generate(
                 player.score
             );
