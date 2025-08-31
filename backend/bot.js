@@ -107,6 +107,7 @@ function startListening() {
         const firstName = msg.from.first_name;
         const username = msg.from.username;
         const lastName = msg.from.last_name;
+        const photoUrl = msg.from.photo_url || null; // این خط اضافه شده است
         const payload = match[1];
 
         let referrerTelegramId = null;
@@ -126,6 +127,7 @@ function startListening() {
                     username: username,
                     firstName: firstName,
                     lastName: lastName,
+                    photo_url: photoUrl,
                     referrerTelegramId: referrerTelegramId,
                 });
                 logger.info(`New user registered: ${userId}. Referrer: ${referrerTelegramId || 'None'}`);
