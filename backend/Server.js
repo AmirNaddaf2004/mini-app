@@ -574,9 +574,9 @@ app.get("/api/referral-leaderboard", async (req, res) => {
                 u.firstName as firstName,
                 u.username as username,
                 COUNT(DISTINCT u2.telegramId) as referral_count
-            FROM Users u2
-            INNER JOIN Users u ON u2.referrerTelegramId = u.telegramId
-            INNER JOIN Scores s ON u2.telegramId = s.userTelegramId
+            FROM users u2
+            INNER JOIN users u ON u2.referrerTelegramId = u.telegramId
+            INNER JOIN scores s ON u2.telegramId = s.userTelegramId
             WHERE u2.referrerTelegramId IS NOT NULL
             GROUP BY u2.referrerTelegramId, u.firstName, u.username
             ORDER BY referral_count DESC
