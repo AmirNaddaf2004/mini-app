@@ -152,7 +152,7 @@ class MathGame {
             }
 
             // --- Step 1 & 2: Get user and their all-time top score ---
-            const [user] = await User.findOrCreate({
+            const [user, created] = await User.findOrCreate({
                 where: { telegramId: userId },
                 defaults: {
                     firstName: jwtPayload.firstName,
@@ -161,10 +161,10 @@ class MathGame {
                     photo_url: jwtPayload.photo_url,
                 },
             });
-            if (user.firstName !== jwtPayload.firstName ||
+            if (!created && (user.firstName !== jwtPayload.firstName ||
                 user.lastName !== jwtPayload.lastName ||
                 user.username !== jwtPayload.username ||
-                user.photo_url !== jwtPayload.photo_url){
+                user.photo_url !== jwtPayload.photo_url)){
                 user.firstName = jwtPayload.firstName;
                 user.lastName = jwtPayload.lastName;
                 user.username = jwtPayload.username;
