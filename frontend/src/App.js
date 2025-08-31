@@ -31,6 +31,13 @@ function App() {
     const [authLoading, setAuthLoading] = useState(true);
     const [membershipRequired, setMembershipRequired] = useState(false);
 
+    const handleShowLeaderboard = useCallback((eventId) => {
+        setFinalScore(null); // <-- ✅ این خط، امتیاز بازی قبلی را پاک می‌کند
+        setCurrentGameEventId(eventId); // ذخیره می‌کنیم کدام لیدربورد نمایش داده شود
+        setView("board");
+        setLeaderboardKey(Date.now()); // برای رفرش شدن کامپوننت
+    }, []);
+
     const [token, setToken] = useState(
         () => localStorage.getItem("jwtToken") || null
     );
@@ -461,6 +468,7 @@ function App() {
                 userData={userData}
                 onLogout={handleLogout}
                 onImageError={handleImageError}
+                onShowLeaderboard={handleShowLeaderboard}
             />
         );
     }, [view, startGame, userData, handleLogout, handleImageError]);

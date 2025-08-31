@@ -387,6 +387,37 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+async function getActiveReferredFriendsCount(currentUserId) {
+    try {
+        const invitedNum = await User.count({
+            where: {
+                referrerTelegramId: currentUserId, // کاربرانی که currentUserId آنها را دعوت کرده است
+            },
+            include: [
+                {
+                    model: Score,
+                    as: "scores", // از alias 'Scores' که در db.js تعریف شده، استفاده می‌کنیم
+                    attributes: [], // نیازی به واکشی فیلدهای Score نیست، فقط برای شرط join استفاده می‌شود
+                    required: true, // این شرط تضمین می‌کند که کاربر حداقل یک Score داشته باشد
+                },
+            ],
+            distinct: true, // تضمین می‌کند که هر کاربر فقط یک بار شمارش شود (در صورت وجود چندین Score)
+        });
+
+        console.log(
+            `User ${currentUserId} has invited ${invitedNum} active friends.`
+        );
+        return invitedNum;
+    } catch (error) {
+        console.error(
+            `Error fetching active referred friends count for user ${currentUserId}:`,
+            error
+        );
+        // در صورت بروز خطا، می‌توانید 0 یا مقدار دیگری را برگردانید
+        return 0;
+    }
+}
+
 app.use(express.static(path.join(__dirname, "../frontend/build")));
 
 // API Routes
@@ -535,6 +566,35 @@ app.post("/api/timeOut", authenticateToken, async (req, res) => {
     }
 });
 
+app.get("/api/referral-leaderboard", async (req, res) => {
+    logger.info("Fetching referral leaderboard...");
+    try {
+        const [results] = await sequelize.query(`
+            SELECT 
+                u.firstName as firstName,
+                u.username as username,
+                COUNT(DISTINCT u2.telegramId) as referral_count
+            FROM Users u2
+            INNER JOIN Users u ON u2.referrerTelegramId = u.telegramId
+            INNER JOIN Scores s ON u2.telegramId = s.userTelegramId
+            WHERE u2.referrerTelegramId IS NOT NULL
+            GROUP BY u2.referrerTelegramId, u.firstName, u.username
+            ORDER BY referral_count DESC
+            LIMIT 3
+        `);
+
+        res.status(200).json(results);
+    } catch (error) {
+        logger.error(`Referral leaderboard error: ${error.message}`, {
+            stack: error.stack,
+        });
+        res.status(500).json({
+            status: "error",
+            message: "Internal server error on referral leaderboard",
+        });
+    }
+});
+
 // اضافه کردن authenticateToken برای شناسایی کاربر فعلی
 app.get("/api/leaderboard", authenticateToken, async (req, res) => {
     try {
@@ -637,7 +697,7 @@ app.get("/api/leaderboard", authenticateToken, async (req, res) => {
     }
 });
 
-app.get("/api/events", (req, res) => {
+app.get("/api/events", async (req, res) => {
     // In a real-world scenario, you would fetch these from a database.
     // For now, we use the values from the .env file as the active event.
     const activeEvents = [];
@@ -652,7 +712,10 @@ app.get("/api/events", (req, res) => {
     // You can add more hardcoded events for testing
     // activeEvents.push({ id: 'some-other-uuid', name: 'Weekend Challenge' });
 
+    const invitedNum = await getActiveReferredFriendsCount(userId);
+
     res.json({
+        invitedNum: invitedNum,
         status: "success",
         events: activeEvents,
     });

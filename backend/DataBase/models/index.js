@@ -50,6 +50,28 @@ db.Reward.belongsTo(db.User, {
     targetKey: 'telegramId'
 });
 
+// --- ارتباطات جدید برای سیستم ارجاع ---
+// یک کاربر می‌تواند چندین کاربر دیگر را ارجاع دهد (ReferredUsers)
+db.User.hasMany(db.User, {
+    foreignKey: {
+        name: 'referrerTelegramId', // این کلید خارجی در خود جدول 'users' است
+        allowNull: true             // یک کاربر لزوماً ارجاع‌دهنده ندارد
+    },
+    as: 'ReferredUsers', // نام مستعار برای دریافت کاربرانی که توسط این کاربر ارجاع شده‌اند (مثلاً user.getReferredUsers())
+    sourceKey: 'telegramId' // telegramId ارجاع‌دهنده مبدأ است
+});
+
+// یک کاربر به یک ارجاع‌دهنده تعلق دارد
+db.User.belongsTo(db.User, {
+    foreignKey: {
+        name: 'referrerTelegramId',
+        allowNull: true
+    },
+    as: 'Referrer', // نام مستعار برای دریافت کاربری که این کاربر را ارجاع داده است (مثلاً user.getReferrer())
+    targetKey: 'telegramId' // telegramId ارجاع‌دهنده مقصد است
+});
+// --- پایان ارتباطات جدید ---
+
 // Add the sequelize instance to the db object
 db.sequelize = sequelize;
 // Add Sequelize library itself if needed elsewhere (optional)
