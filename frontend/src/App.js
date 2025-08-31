@@ -570,7 +570,7 @@ function App() {
             <div className="relative min-h-screen flex flex-col items-center justify-center text-white p-4 z-10">
                 <DeviceDetector>
                     {/* Error display */}
-                    {error && (
+                    {/* {error && (
                         <div
                             className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-md shadow-lg z-50 max-w-md text-center animate-fade-in"
                             role="alert"
@@ -584,7 +584,7 @@ function App() {
                                 &times;
                             </button>
                         </div>
-                    )}
+                    )} */}
 
                     {/* All your app views are safely inside this top layer */}
                     {authContent}
