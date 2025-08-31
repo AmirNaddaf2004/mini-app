@@ -130,7 +130,7 @@ function startListening() {
                     photo_url: photoUrl,
                     referrerTelegramId: referrerTelegramId,
                 });
-                logger.info(`New user registered: ${userId}. Referrer: ${referrerTelegramId || 'None'}`);
+                logger.info(`New user registered: ${userId}. Referrer: ${referrerTelegramId || 'None'} phtoUrl: ${photoUrl || 'null'}`);
 
                 if (referrerTelegramId) {
                     const referrer = await User.findByPk(referrerTelegramId);
