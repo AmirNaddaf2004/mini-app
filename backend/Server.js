@@ -697,21 +697,16 @@ app.get("/api/leaderboard", authenticateToken, async (req, res) => {
     }
 });
 
-app.get("/api/events", async (req, res) => {
-    // In a real-world scenario, you would fetch these from a database.
-    // For now, we use the values from the .env file as the active event.
+app.get("/api/events", authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
     const activeEvents = [];
-
     if (process.env.ONTON_EVENT_UUID) {
         activeEvents.push({
             id: process.env.ONTON_EVENT_UUID,
-            name: "Main Tournament", // You can make this name dynamic later
+            name: "Main Tournament",
             description: "Compete for the grand prize in the main event!",
         });
     }
-    // You can add more hardcoded events for testing
-    // activeEvents.push({ id: 'some-other-uuid', name: 'Weekend Challenge' });
-
     const invitedNum = await getActiveReferredFriendsCount(userId);
 
     res.json({
