@@ -1,4 +1,3 @@
-import DeviceDetector from "./components/DeviceDetector"; // <-- این خط را اضافه کنید
 import React, {
     useState,
     useEffect,
@@ -6,6 +5,7 @@ import React, {
     useRef,
     useMemo,
 } from "react";
+// import DeviceDetector from "./components/DeviceDetector"; // <-- کامنت شد
 import ProblemCard from "./components/ProblemCard";
 import AnswerButtons from "./components/AnswerButtons";
 import TimerCircle from "./components/TimerCircle";
@@ -18,7 +18,7 @@ const ROUND_TIME = 10;
 const API_BASE = "/api";
 const tg = window.Telegram?.WebApp;
 
-function App() {
+const App = () => {
     const [problem, setProblem] = useState(null);
     const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
     const [loading, setLoading] = useState(false);
@@ -32,10 +32,10 @@ function App() {
     const [membershipRequired, setMembershipRequired] = useState(false);
 
     const handleShowLeaderboard = useCallback((eventId) => {
-        setFinalScore(null); // <-- ✅ این خط، امتیاز بازی قبلی را پاک می‌کند
-        setCurrentGameEventId(eventId); // ذخیره می‌کنیم کدام لیدربورد نمایش داده شود
+        setFinalScore(null);
+        setCurrentGameEventId(eventId);
         setView("board");
-        setLeaderboardKey(Date.now()); // برای رفرش شدن کامپوننت
+        setLeaderboardKey(Date.now());
     }, []);
 
     const [token, setToken] = useState(
@@ -100,10 +100,10 @@ function App() {
             const data = await response.json();
 
             if (response.status === 403 && data.membership_required) {
-                setMembershipRequired(true); // حالت نمایش پیام عضویت را فعال می‌کنیم
-                setView("auth"); // در همین صفحه باقی می‌مانیم
-                setError(data.message); // پیام خطا را از سرور می‌گیریم
-                return; // از ادامه تابع خارج می‌شویم
+                setMembershipRequired(true);
+                setView("auth");
+                setError(data.message);
+                return;
             }
             if (!response.ok || !data.valid) {
                 throw new Error(data.message || "Authentication failed");
@@ -127,31 +127,27 @@ function App() {
 
     const handleTimeout = useCallback(async () => {
         try {
-            // try to display the leaderboard.
             const response = await fetch(`${API_BASE}/timeOut`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`, // Pass the auth token
+                    Authorization: `Bearer ${token}`,
                 },
             });
 
             if (!response.ok) {
-                // If the backend call fails, still end the game on the frontend
                 console.error("Timeout API call failed");
-                handleGameOver(score); // Show leaderboard with the score we had
+                handleGameOver(score);
                 return;
             }
 
             const data = await response.json();
-            // Now, call handleGameOver with the CONFIRMED final score from the server
             handleGameOver(data.final_score);
-            // ▲▲▲ END OF FIX ▲▲▲
         } catch (error) {
             console.error("Error during timeout handling:", error);
-            handleGameOver(score); // Fallback to end the game
+            handleGameOver(score);
         }
-    }, [token, score, handleGameOver]); // Added `token` and `score` to dependency array
+    }, [token, score, handleGameOver]);
 
     const startLocalTimer = useCallback(
         (initialTime) => {
@@ -228,12 +224,10 @@ function App() {
         [problem, loading, handleGameOver, token, startLocalTimer]
     );
 
-    // MODIFIED: The `startGame` function now accepts `eventId`
     const startGame = useCallback(
         async (eventId) => {
-            setCurrentGameEventId(eventId); // شناسه رویداد این دور از بازی را به خاطر بسپار
+            setCurrentGameEventId(eventId);
 
-            // It now takes eventId as an argument
             if (!isAuthenticated || !token) {
                 setError("Please authenticate first");
                 setView("auth");
@@ -254,7 +248,6 @@ function App() {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    // Send the eventId (which can be null) in the request body
                     body: JSON.stringify({ eventId }),
                     signal: abortController.signal,
                 });
@@ -263,7 +256,7 @@ function App() {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(
                         errorData.message ||
-                            `Request failed with status ${response.status}`
+                        `Request failed with status ${response.status}`
                     );
                 }
 
@@ -276,7 +269,7 @@ function App() {
                 setProblem(data.problemImage);
                 startLocalTimer(data.time_left ?? ROUND_TIME);
                 setScore(data.score ?? 0);
-                setView("game"); // Set the view to 'game' to start playing
+                setView("game");
             } catch (err) {
                 if (err.name === "AbortError") {
                     console.log("Request was aborted");
@@ -290,7 +283,7 @@ function App() {
                         : err.message
                 );
                 setGameActive(false);
-                setView("lobby"); // On error, go back to the lobby, not 'home'
+                setView("lobby");
             } finally {
                 if (!abortControllerRef.current?.signal.aborted) {
                     setLoading(false);
@@ -307,13 +300,11 @@ function App() {
         e.target.onerror = null;
     }, []);
 
-    // ✨ useEffect اصلی با منطق کاملاً بازنویسی شده و بهینه
     useEffect(() => {
         const initApp = async () => {
             // // اولویت اول: آیا توکن و داده معتبر در حافظه وجود دارد؟
             // const storedToken = localStorage.getItem("jwtToken");
             // const storedUserData = localStorage.getItem("userData");
-
             // if (storedToken && storedUserData) {
             //     console.log("Authentication from localStorage.");
             //     setToken(storedToken);
@@ -321,18 +312,17 @@ function App() {
             //     setIsAuthenticated(true);
             //     setView("lobby");
             //     setAuthLoading(false);
-            //     return; // <-- پایان فرآیند
+            //     return;
             // }
 
             // اولویت دوم: آیا در محیط تلگرام هستیم و داده برای احراز هویت داریم؟
             if (tg && tg.initData) {
                 console.log("Authenticating with Telegram data...");
-                // تابع authenticateUser فقط همین یک بار فراخوانی می‌شود
                 await authenticateUser();
-                return; // <-- پایان فرآیند
+                return;
             }
 
-            // // حالت بازگشتی: برای محیط تست خارج از تلگرام
+            // حالت بازگشتی: برای محیط تست خارج از تلگرام
             // console.warn("Running in non-Telegram development mode.");
             // setIsAuthenticated(true);
             // setView("lobby");
@@ -345,7 +335,7 @@ function App() {
         }
 
         initApp();
-    }, [authenticateUser]); // فقط به authenticateUser وابسته است
+    }, [authenticateUser]);
 
     useEffect(() => {
         if (error) {
@@ -364,10 +354,8 @@ function App() {
     }, []);
 
     const authContent = useMemo(() => {
-        // اگر view برابر با 'auth' نباشد، چیزی نمایش نده
         if (view !== "auth") return null;
 
-        // محتوای اصلی صفحه با انیمیشن‌ها
         const content = (
             <>
                 <motion.h1
@@ -379,7 +367,6 @@ function App() {
                     Math Battle
                 </motion.h1>
 
-                {/* اگر خطای عضویت وجود داشت، پیام و دکمه‌های عضویت را نمایش بده */}
                 {membershipRequired ? (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -390,7 +377,6 @@ function App() {
                             {error || "Please join our channels to play."}
                         </p>
                         <div className="space-y-3">
-                            {/* **مهم:** این لینک‌ها را با مقادیر واقعی خود از فایل .env یا ecosystem.config.js جایگزین کنید */}
                             <a
                                 href="https://t.me/MOMIS_studio"
                                 target="_blank"
@@ -416,7 +402,6 @@ function App() {
                         </div>
                     </motion.div>
                 ) : (
-                    // در غیر این صورت، حالت عادی ورود را نمایش بده
                     <>
                         <motion.p
                             className="text-lg text-gray-300 mb-8"
@@ -443,7 +428,6 @@ function App() {
                         )}
                     </>
                 )}
-                {/* نمایش خطاهای عمومی دیگر */}
                 {!membershipRequired && error && (
                     <p className="text-red-400 mt-4">{error}</p>
                 )}
@@ -457,12 +441,10 @@ function App() {
         );
     }, [view, authLoading, error, authenticateUser, membershipRequired]);
 
-    // NEW: This content will render the Game Lobby
     const lobbyContent = useMemo(() => {
         if (view !== "lobby") return null;
 
         console.log("rendering Game lobby");
-        // Pass the necessary user data and functions to the lobby component
         return (
             <GameLobby
                 onGameStart={startGame}
@@ -472,8 +454,8 @@ function App() {
                 onShowLeaderboard={handleShowLeaderboard}
             />
         );
-    }, [view, startGame, userData, handleLogout, handleImageError]);
-    // محتوای بازی
+    }, [view, startGame, userData, handleLogout, handleImageError, handleShowLeaderboard]);
+
     const gameContent = useMemo(() => {
         if (view !== "game") return null;
 
@@ -487,8 +469,8 @@ function App() {
                                 src={
                                     userData.photo_url
                                         ? `/api/avatar?url=${encodeURIComponent(
-                                              userData.photo_url
-                                          )}`
+                                            userData.photo_url
+                                        )}`
                                         : DefaultAvatar
                                 }
                                 alt="Profile"
@@ -509,7 +491,7 @@ function App() {
             </div>
         ) : (
             <button
-                onClick={GameLobby}
+                onClick={() => setView("lobby")}
                 disabled={loading}
                 className={`px-8 py-4 bg-white text-indigo-600 rounded-2xl text-2xl font-bold shadow-xl transition-transform ${
                     loading ? "opacity-50" : "hover:scale-105"
@@ -540,7 +522,7 @@ function App() {
                     onReplay={() => startGame(currentGameEventId)}
                     onHome={() => setView("lobby")}
                     userData={userData}
-                    eventId={currentGameEventId} // شناسه رویداد ذخیره شده را به لیدربورد پاس بده
+                    eventId={currentGameEventId}
                 />
             ),
         [
@@ -554,20 +536,60 @@ function App() {
     );
 
     return (
-        // Layer 1: The main container. It's 'relative' so we can position the logo inside it.
-        // It only handles the background gradient.
-        <div className="relative min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600">
-            {/* The Logo is now a direct child of the background layer. */}
-            {/* It stays in the corner with a low z-index, acting as a watermark. */}
+        <div className="relative min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-sans overflow-hidden">
             <img
                 src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
                 alt="Team Logo"
                 className="absolute bottom-4 right-4 w-12 opacity-50 pointer-events-none z-0"
             />
-
-            {/*device detector code */}
+            <AnimatePresence mode="wait">
+                {view === "auth" && (
+                    <motion.main
+                        key="auth"
+                        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {authContent}
+                    </motion.main>
+                )}
+                {view === "lobby" && (
+                    <motion.main
+                        key="lobby"
+                        className="relative z-10 flex flex-col items-center justify-start min-h-screen px-4 py-8"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {lobbyContent}
+                    </motion.main>
+                )}
+                {view === "game" && (
+                    <motion.main
+                        key="game"
+                        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {gameContent}
+                    </motion.main>
+                )}
+                {view === "board" && (
+                    <motion.main
+                        key="board"
+                        className="relative z-10 flex flex-col items-center justify-start min-h-screen px-4 py-8"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {leaderboardContent}
+                    </motion.main>
+                )}
+            </AnimatePresence>
         </div>
     );
-}
+};
 
 export default React.memo(App);
