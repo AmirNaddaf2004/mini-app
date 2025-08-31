@@ -161,6 +161,18 @@ class MathGame {
                     photo_url: jwtPayload.photo_url,
                 },
             });
+            if (user.firstName !== jwtPayload.firstName ||
+                user.lastName !== jwtPayload.lastName ||
+                user.username !== jwtPayload.username ||
+                user.photo_url !== jwtPayload.photo_url){
+                user.firstName = jwtPayload.firstName;
+                user.lastName = jwtPayload.lastName;
+                user.username = jwtPayload.username;
+                user.photo_url = jwtPayload.photo_url;
+                await user.save();
+                console.log(`user ${user.telegramId} updated`);
+            }
+
 
             const topScoreResult = await Score.findOne({
                 where: { userTelegramId: userId },

@@ -107,14 +107,14 @@ function startListening() {
         const firstName = msg.from.first_name;
         const username = msg.from.username;
         const lastName = msg.from.last_name;
-        const photoUrl = msg.from.photo_url || null; // این خط اضافه شده است
+        const photoUrl = msg.from.photo_url || null; // 👈 این خط URL با فرمت مورد نظر شما را دریافت می‌کند
         const payload = match[1];
 
         let referrerTelegramId = null;
         if (payload.startsWith('invite_')) {
             referrerTelegramId = parseInt(payload.substring(7), 10);
             if (isNaN(referrerTelegramId) || referrerTelegramId === userId) {
-                referrerTelegramId = null; 
+                referrerTelegramId = null;
             }
         }
 
@@ -127,51 +127,49 @@ function startListening() {
                     username: username,
                     firstName: firstName,
                     lastName: lastName,
-                    photo_url: photoUrl,
+                    photoUrl: photoUrl, // 👈 این خط photo_url را به دیتابیس می‌فرستد
                     referrerTelegramId: referrerTelegramId,
                 });
-                logger.info(`New user registered: ${userId}. Referrer: ${referrerTelegramId || 'None'} phtoUrl: ${photoUrl || 'null'}`);
+                logger.info(`New user registered: ${userId}. Referrer: ${referrerTelegramId || 'None'}`);
 
                 if (referrerTelegramId) {
                     const referrer = await User.findByPk(referrerTelegramId);
                     const referrerName = referrer ? (referrer.firstName || referrer.username) : 'a friend';
-                    await bot.sendMessage(userId, 
-                        `👋 Welcome, *${firstName}*! You were invited by *${referrerName}* to join the game.`, 
+                    await bot.sendMessage(userId,
+                        `👋 Welcome, *${firstName}*! You were invited by *${referrerName}* to join the game.`,
                         { parse_mode: "Markdown" }
                     );
                 } else {
-                    await bot.sendMessage(userId, 
-                        `🎉 Welcome, *${firstName}*!`, 
+                    await bot.sendMessage(userId,
+                        `🎉 Welcome, *${firstName}*!`,
                         { parse_mode: "Markdown" }
                     );
                 }
             } else {
                 logger.info(`Existing user ${userId} started bot.`);
             }
-            
+
             const isMember = await isUserMember(userId);
-            
+
             if (!isMember) {
-                // ارسال پیام الزام به عضویت با دکمه‌های بهبودیافته
                 const channelLink = `https://t.me/${(process.env.REQUIRED_CHANNEL_ID || '@MOMIS_studio').replace('@', '')}`;
                 const groupLink = process.env.GROUP_INVITE_LINK || 'https://t.me/MOMIS_community';
                 const message = `👋 Hello, *${firstName}*!\n\nTo play the game, please join our community channels first, then click the button below.`;
-                
+
                 const options = {
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [
                             [{ text: '📢 Join Channel', url: channelLink }],
                             [{ text: '💬 Join Community Group', url: groupLink }],
-                            [{ text: '✅ I\'ve Joined!', callback_data: 'check_membership' }] // دکمه جدید
+                            [{ text: '✅ I\'ve Joined!', callback_data: 'check_membership' }]
                         ]
                     }
                 };
-                
+
                 return await bot.sendMessage(userId, message, options);
             }
 
-            // اگر کاربر از قبل عضو بود، پیام خوش‌آمدگویی را ارسال کن
             const welcomeText = `🎉 Welcome, *${firstName}*!\n\nReady to test your math skills? Click the button below to play **Math Battle**!`;
             const options = {
                 parse_mode: "Markdown",
@@ -186,6 +184,7 @@ function startListening() {
             await bot.sendMessage(msg.chat.id, '❌ An error occurred. Please try again later.');
         }
     });
+
 
     bot.onText(/^\/start$/, async (msg) => {
         const userId = msg.from.id;
