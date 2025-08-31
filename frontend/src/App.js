@@ -461,6 +461,7 @@ function App() {
     const lobbyContent = useMemo(() => {
         if (view !== "lobby") return null;
 
+        console.log("rendering Game lobby");
         // Pass the necessary user data and functions to the lobby component
         return (
             <GameLobby
