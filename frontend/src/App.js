@@ -564,35 +564,7 @@ function App() {
                 className="absolute bottom-4 right-4 w-12 opacity-50 pointer-events-none z-0"
             />
 
-            {/* Layer 2: The Content container. */}
-            {/* This container holds ALL your interactive components. */}
-            {/* It's centered and has a higher z-index to ensure it always sits ON TOP of the logo. */}
-            <div className="relative min-h-screen flex flex-col items-center justify-center text-white p-4 z-10">
-                <DeviceDetector>
-                    {/* Error display */}
-                    {/* {error && (
-                        <div
-                            className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-md shadow-lg z-50 max-w-md text-center animate-fade-in"
-                            role="alert"
-                        >
-                            {error}
-                            <button
-                                onClick={() => setError(null)}
-                                className="ml-2 text-white hover:text-gray-200"
-                                aria-label="Close error message"
-                            >
-                                &times;
-                            </button>
-                        </div>
-                    )} */}
-
-                    {/* All your app views are safely inside this top layer */}
-                    {authContent}
-                    {lobbyContent}
-                    {gameContent}
-                    {leaderboardContent}
-                </DeviceDetector>
-            </div>
+            {/*device detector code */}
         </div>
     );
 }
