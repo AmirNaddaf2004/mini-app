@@ -396,7 +396,7 @@ async function getActiveReferredFriendsCount(currentUserId) {
             include: [
                 {
                     model: Score,
-                    as: "scores", // از alias 'Scores' که در db.js تعریف شده، استفاده می‌کنیم
+                    as: "Scores", // از alias 'Scores' که در db.js تعریف شده، استفاده می‌کنیم
                     attributes: [], // نیازی به واکشی فیلدهای Score نیست، فقط برای شرط join استفاده می‌شود
                     required: true, // این شرط تضمین می‌کند که کاربر حداقل یک Score داشته باشد
                 },
