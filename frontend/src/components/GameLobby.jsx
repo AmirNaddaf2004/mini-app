@@ -11,7 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import TopInviterLeaderboard from "./TopInviterLeaderboard";
 
-const API_BASE = "https://new2048.momis.studio/api";
+const API_BASE = "/api";
 
 const GameLobby = ({
     onGameStart,
@@ -29,6 +29,7 @@ const GameLobby = ({
 
     useEffect(() => {
         const fetchEventsAndInvites = async () => {
+            console.log('initializing game lobby');
             try {
                 setIsLoading(true);
                 const response = await fetch("/api/events", {
