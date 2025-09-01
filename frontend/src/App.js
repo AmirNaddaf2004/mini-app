@@ -256,7 +256,7 @@ const App = () => {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(
                         errorData.message ||
-                        `Request failed with status ${response.status}`
+                            `Request failed with status ${response.status}`
                     );
                 }
 
@@ -454,7 +454,14 @@ const App = () => {
                 onShowLeaderboard={handleShowLeaderboard}
             />
         );
-    }, [view, startGame, userData, handleLogout, handleImageError, handleShowLeaderboard]);
+    }, [
+        view,
+        startGame,
+        userData,
+        handleLogout,
+        handleImageError,
+        handleShowLeaderboard,
+    ]);
 
     const gameContent = useMemo(() => {
         if (view !== "game") return null;
@@ -469,8 +476,8 @@ const App = () => {
                                 src={
                                     userData.photo_url
                                         ? `/api/avatar?url=${encodeURIComponent(
-                                            userData.photo_url
-                                        )}`
+                                              userData.photo_url
+                                          )}`
                                         : DefaultAvatar
                                 }
                                 alt="Profile"
@@ -536,7 +543,9 @@ const App = () => {
     );
 
     return (
-        <div className="relative min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-sans overflow-hidden">
+        // جایگزین کنید با:
+        <div className="relative min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
+            {" "}
             <img
                 src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}
                 alt="Team Logo"
