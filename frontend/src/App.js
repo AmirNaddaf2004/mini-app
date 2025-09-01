@@ -359,7 +359,7 @@ const App = () => {
         const content = (
             <>
                 <motion.h1
-                    className="text-5xl font-bold mb-4 text-indigo-400 [text-shadow:0_0_15px_theme(colors.indigo.500)]"
+                    className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
@@ -544,7 +544,7 @@ const App = () => {
 
     return (
         // جایگزین کنید با:
-        <div className="relative min-h-screen bg-gradient-to-br from-gray-900 to-slate-800 text-slate-100">
+        <div className="relative min-h-screen bg-gradient-to-br from-gray-900 to-slate-800">
             {" "}
             <img
                 src={`${process.env.PUBLIC_URL}/teamlogo.png?v=2`}

@@ -29,14 +29,12 @@ const GameLobby = ({
 
     useEffect(() => {
         const fetchEventsAndInvites = async () => {
-            console.log("La La LA");
+            console.log('La La LA');
             try {
                 setIsLoading(true);
                 const response = await fetch("/api/events", {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "jwtToken"
-                        )}`,
+                        Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
                     },
                 }).then((res) => res.json());
 
@@ -80,9 +78,7 @@ const GameLobby = ({
     if (isLoading) {
         return (
             <div className="w-full max-w-md mx-auto text-center p-6">
-                <p className="text-white text-lg animate-pulse">
-                    Loading Game Modes...
-                </p>
+                <p className="text-white text-lg animate-pulse">Loading Game Modes...</p>
             </div>
         );
     }
@@ -93,8 +89,7 @@ const GameLobby = ({
             <div className="flex-grow overflow-y-auto px-4 pt-6 pb-28">
                 {/* User Profile Section */}
                 {userData && (
-                    <div className="relative flex items-center gap-4 bg-slate-800/50 p-2 rounded-xl mb-6 ring-1 ring-slate-700">
-                        {" "}
+                    <div className="relative flex items-center gap-4 bg-black/20 p-2 rounded-xl mb-6 ring-1 ring-slate-700">
                         <img
                             src={
                                 userData.photo_url
@@ -112,9 +107,7 @@ const GameLobby = ({
                                 <h2 className="font-bold text-xl leading-tight text-white">
                                     {userData.first_name} {userData.last_name}
                                 </h2>
-                                <p className="text-sm opacity-70">
-                                    @{userData.username}
-                                </p>
+                                <p className="text-sm opacity-70">@{userData.username}</p>
                             </div>
                             {onLogout && (
                                 <button
@@ -138,17 +131,14 @@ const GameLobby = ({
                                 Select Mode
                             </h1>
                             {/* Free Play Card */}
-                            <div className="bg-slate-800/50 rounded-xl p-5 my-4 border border-slate-700 transition-all transform hover:scale-[1.02] hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/30">
-                                {" "}
-                                <h2 className="text-xl font-bold text-indigo-400">
-                                    Free Play
-                                </h2>
+                            <div className="bg-black/20 rounded-xl p-5 my-4 border border-slate-700 transition-all transform hover:scale-[1.02] hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/30">
+                                <h2 className="text-xl font-bold text-cyan-400">Free Play</h2>
                                 <p className="text-sm text-slate-300 mt-1 mb-4">
                                     Practice and play just for fun.
                                 </p>
                                 <div className="flex items-center gap-3">
                                     <button
-                                        className="flex-grow bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 ..."
+                                        className="flex-grow bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg"
                                         onClick={() => onGameStart(null)}
                                     >
                                         Play
@@ -181,17 +171,13 @@ const GameLobby = ({
                                     <div className="flex items-center gap-3">
                                         <button
                                             className="flex-grow bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg"
-                                            onClick={() =>
-                                                onGameStart(event.id)
-                                            }
+                                            onClick={() => onGameStart(event.id)}
                                         >
                                             Join Event
                                         </button>
                                         <button
                                             className="p-2 bg-slate-700/80 hover:bg-slate-600 rounded-lg transition-colors"
-                                            onClick={() =>
-                                                onShowLeaderboard(event.id)
-                                            }
+                                            onClick={() => onShowLeaderboard(event.id)}
                                             title="View Leaderboard"
                                         >
                                             <img
@@ -290,8 +276,7 @@ const GameLobby = ({
                                 Invite & Earn Rewards
                             </h2>
                             <p className="text-slate-300 mb-6">
-                                Share your personal link with friends. You'll
-                                both get rewards when they join!
+                                Share your personal link with friends. You'll both get rewards when they join!
                             </p>
 
                             <div className="bg-slate-900/60 rounded-lg p-3 text-left mb-5">
@@ -300,8 +285,7 @@ const GameLobby = ({
                                 </label>
                                 <p className="text-sm text-yellow-300 break-words mt-1">
                                     {`https://t.me/${
-                                        userData.bot_username ||
-                                        "Momis_mathbattle_bot"
+                                        userData.bot_username || "Momis_mathbattle_bot"
                                     }?start=invite_${userData.id}`}
                                 </p>
                             </div>
@@ -316,9 +300,7 @@ const GameLobby = ({
                             >
                                 <ClipboardIcon className="h-5 w-5" />
                                 <span>
-                                    {copied
-                                        ? "Copied to Clipboard!"
-                                        : "Copy Invite Link"}
+                                    {copied ? "Copied to Clipboard!" : "Copy Invite Link"}
                                 </span>
                             </button>
                         </div>
