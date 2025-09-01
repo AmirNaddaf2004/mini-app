@@ -469,7 +469,9 @@ const App = () => {
         return problem ? (
             <div className="flex flex-col items-center gap-6 w-full max-w-md">
                 <div className="flex justify-between w-full">
-                    <p className="text-2xl font-bold">Score: {score}</p>
+                    <p className="text-2xl font-bold text-slate-100">
+                        Score: <span className="text-yellow-400">{score}</span>
+                    </p>{" "}
                     {userData && (
                         <div className="flex items-center gap-2">
                             <img
@@ -481,10 +483,12 @@ const App = () => {
                                         : DefaultAvatar
                                 }
                                 alt="Profile"
-                                className="w-12 h-12 rounded-full"
+                                className="w-12 h-12 rounded-full border-2 border-indigo-400"
                                 onError={handleImageError}
                             />
-                            <span>{userData.first_name}</span>
+                            <span className="text-white font-medium">
+                                {userData.first_name}
+                            </span>{" "}
                         </div>
                     )}
                 </div>
@@ -500,8 +504,10 @@ const App = () => {
             <button
                 onClick={() => setView("lobby")}
                 disabled={loading}
-                className={`px-8 py-4 bg-white text-indigo-600 rounded-2xl text-2xl font-bold shadow-xl transition-transform ${
-                    loading ? "opacity-50" : "hover:scale-105"
+                className={`px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl text-2xl font-bold shadow-xl transition-transform ${
+                    loading
+                        ? "opacity-50"
+                        : "hover:scale-105 hover:from-indigo-600 hover:to-purple-700"
                 }`}
             >
                 {loading ? "Loading..." : "Start Game"}
