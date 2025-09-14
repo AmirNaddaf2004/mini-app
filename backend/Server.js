@@ -158,20 +158,20 @@ class MathGame {
             const [user, created] = await db.User_Momis.findOrCreate({
             where: { telegramId: userData.id },
             defaults: {
-                firstName: userData.first_name,
-                lastName: userData.last_name || "",
-                username: userData.username || "",
-                photo_url: userData.photo_url || null,
+                firstName: jwtPayload.first_name,
+                lastName: jwtPayload.last_name || "",
+                username: jwtPayload.username || "",
+                photo_url: jwtPayload.photo_url || null,
             },
             });
 
             const [user2, created2] = await User.findOrCreate({
             where: { telegramId: userData.id },
             defaults: {
-                firstName: userData.first_name,
-                lastName: userData.last_name || "",
-                username: userData.username || "",
-                photo_url: userData.photo_url || null,
+                firstName: jwtPayload.first_name,
+                lastName: jwtPayload.last_name || "",
+                username: jwtPayload.username || "",
+                photo_url: jwtPayload.photo_url || null,
             },
             });
 
