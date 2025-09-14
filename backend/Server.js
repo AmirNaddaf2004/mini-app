@@ -13,7 +13,7 @@ const validateTelegramData = require("./telegramAuth").default;
 const jwt = require("jsonwebtoken");
 
 const { User, Score, sequelize } = require("./DataBase/models");
-const { sequelize2, user_db_sequelize } = require('./DataBase/database');
+const { sequelize2, user_db_sequelize } = require("./DataBase/database");
 const db = require("./DataBase/models");
 
 const MaxTime = 10;
@@ -51,7 +51,7 @@ app.use(cors(corsOptions));
 class Player {
     constructor(playerId, jwtPayload) {
         this.id = playerId;
-        this.jwtPayload = jwtPayload; 
+        this.jwtPayload = jwtPayload;
         this.score = 0;
         this.top_score = 0;
         this.time_left = MaxTime;
@@ -153,40 +153,6 @@ class MathGame {
             if (!userId) {
                 throw new Error("User ID is missing in JWT payload");
             }
-
-            // --- Step 1 & 2: Get user and their all-time top score ---
-            const [user, created] = await db.User_Momis.findOrCreate({
-            where: { telegramId: jwtPayload.id },
-            defaults: {
-                firstName: jwtPayload.first_name,
-                lastName: jwtPayload.last_name || "",
-                username: jwtPayload.username || "",
-                photo_url: jwtPayload.photo_url || null,
-            },
-            });
-
-            const [user2, created2] = await User.findOrCreate({
-            where: { telegramId: jwtPayload.id },
-            defaults: {
-                firstName: jwtPayload.first_name,
-                lastName: jwtPayload.last_name || "",
-                username: jwtPayload.username || "",
-                photo_url: jwtPayload.photo_url || null,
-            },
-            });
-
-            if (!created && (user.firstName !== jwtPayload.firstName ||
-                user.lastName !== jwtPayload.lastName ||
-                user.username !== jwtPayload.username ||
-                user.photo_url !== jwtPayload.photo_url)){
-                user.firstName = jwtPayload.firstName;
-                user.lastName = jwtPayload.lastName;
-                user.username = jwtPayload.username;
-                user.photo_url = jwtPayload.photo_url;
-                await user.save();
-                console.log(`user ${user.telegramId} updated`);
-            }
-
 
             const topScoreResult = await Score.findOne({
                 where: { userTelegramId: userId },
@@ -317,7 +283,7 @@ class MathGame {
                     status: "game_over",
                     final_score: player.score,
                     top_score: player.top_score,
-                    eventId: player.currentEventId, 
+                    eventId: player.currentEventId,
                 };
             }
 
@@ -374,7 +340,7 @@ class MathGame {
 
             player.current_problem = problem;
             player.current_answer = answer;
-            
+
             const problemImage = createProblemImage(problem);
 
             return {
@@ -415,7 +381,8 @@ const authenticateToken = (req, res, next) => {
 
 async function getActiveReferredFriendsCount(currentUserId) {
     try {
-        const [results] = await user_db_sequelize.query(`
+        const [results] = await user_db_sequelize.query(
+            `
             SELECT
                 COUNT(DISTINCT u.telegramId) AS invited_num
             FROM
@@ -439,10 +406,12 @@ async function getActiveReferredFriendsCount(currentUserId) {
                       WHERE mo_s.userTelegramId = u.telegramId
                   )
                 )
-        `, {
-            replacements: { currentUserId: currentUserId },
-            type: user_db_sequelize.QueryTypes.SELECT,
-        });
+        `,
+            {
+                replacements: { currentUserId: currentUserId },
+                type: user_db_sequelize.QueryTypes.SELECT,
+            }
+        );
         const invitedNum = results ? results.invited_num : 0;
 
         console.log(
@@ -486,7 +455,42 @@ app.post("/api/telegram-auth", async (req, res) => {
                 membership_required: true, // یک فلگ برای فرانت‌اند تا پیام مناسب را نمایش دهد
             });
         }
-        // --- پایان بخش بررسی عضویت ---
+        // --- پایان بخش بررسی AMIIIIIIIIIIIIIIIIIIIR KIR TUT ---
+        // --- Step 1 & 2: Get user and their all-time top score ---
+        const [user, created] = await db.User_Momis.findOrCreate({
+            where: { telegramId: userData.id },
+            defaults: {
+                firstName: userData.first_name,
+                lastName: userData.last_name || "",
+                username: userData.username || "",
+                photo_url: userData.photo_url || null,
+            },
+        });
+
+        const [user2, created2] = await User.findOrCreate({
+            where: { telegramId: userData.id },
+            defaults: {
+                firstName: userData.first_name,
+                lastName: userData.last_name || "",
+                username: userData.username || "",
+                photo_url: userData.photo_url || null,
+            },
+        });
+
+        if (
+            !created &&
+            (user.firstName !== jwtPayload.firstName ||
+                user.lastName !== jwtPayload.lastName ||
+                user.username !== jwtPayload.username ||
+                user.photo_url !== jwtPayload.photo_url)
+        ) {
+            user.firstName = jwtPayload.firstName;
+            user.lastName = jwtPayload.lastName;
+            user.username = jwtPayload.username;
+            user.photo_url = jwtPayload.photo_url;
+            await user.save();
+            console.log(`user ${user.telegramId} updated`);
+        }
 
         const token = jwt.sign(
             {
