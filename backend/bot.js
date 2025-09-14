@@ -8,7 +8,7 @@ if (!token) {
     throw new Error('Telegram BOT_TOKEN is not configured in .env file.');
 }
 
-const { User, Score, Reward, sequelize } = require("./DataBase/models");
+const db = require("./DataBase/models");
 
 
 // خواندن متغیرها از فایل تنظیمات برای انعطاف‌پذیری بیشتر
@@ -119,36 +119,49 @@ function startListening() {
         }
 
         try {
-            let user = await User.findByPk(userId);
-
-            if (!user) {
-                user = await User.create({
-                    telegramId: userId,
+            // ⚠️ تغییر: از findOrCreate روی مدل User_Momis استفاده می‌کنیم
+            const [user, created] = await db.User_Momis.findOrCreate({
+                where: { telegramId: userId },
+                defaults: {
                     username: username,
                     firstName: firstName,
                     lastName: lastName,
-                    photoUrl: photoUrl, // 👈 این خط photo_url را به دیتابیس می‌فرستد
                     referrerTelegramId: referrerTelegramId,
-                });
-                logger.info(`New user registered: ${userId}. Referrer: ${referrerTelegramId || 'None'}`);
-
-                if (referrerTelegramId) {
-                    const referrer = await User.findByPk(referrerTelegramId);
-                    const referrerName = referrer ? (referrer.firstName || referrer.username) : 'a friend';
-                    await bot.sendMessage(userId,
-                        `👋 Welcome, *${firstName}*! You were invited by *${referrerName}* to join the game.`,
-                        { parse_mode: "Markdown" }
-                    );
-                } else {
-                    await bot.sendMessage(userId,
-                        `🎉 Welcome, *${firstName}*!`,
-                        { parse_mode: "Markdown" }
-                    );
                 }
-            } else {
-                logger.info(`Existing user ${userId} started bot.`);
-            }
-
+            });
+            const [user2, created2] = await db.User.findOrCreate({
+                where: { telegramId: userId },
+                defaults: {
+                    username: username,
+                    firstName: firstName,
+                    lastName: lastName,
+                    referrerTelegramId: referrerTelegramId,
+                }
+            });
+            
+            if (created) {
+                logger.info(`New user registered: ${userId}. Referrer: ${referrerTelegramId || 'None'}`);
+                if (referrerTelegramId) {
+                    const referrer = await db.User_Momis.findByPk(referrerTelegramId);
+                    const referrerName = referrer ? (referrer.firstName || referrer.username) : 'a friend';
+                    await bot.sendMessage(userId, 
+                        `👋 Welcome, *${firstName}*! You were invited by *${referrerName}* to join the game.`, 
+                        { parse_mode: "Markdown" }
+                    );
+                } else {
+                    await bot.sendMessage(userId, 
+                        `🎉 Welcome, *${firstName}*!`, 
+                        { parse_mode: "Markdown" }
+                    );
+                }
+            } else {
+                // Optional: update user info on subsequent starts
+                await db.User_Momis.update(
+                    { username, firstName, lastName },
+                    { where: { telegramId: userId } }
+                );
+                logger.info(`Existing user ${userId} started bot. Info updated.`);
+            }
             const isMember = await isUserMember(userId);
 
             if (!isMember) {

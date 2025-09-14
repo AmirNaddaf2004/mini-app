@@ -1,5 +1,6 @@
 // Import the sequelize instance
-const sequelize = require('../database');
+const { sequelize, user_db_sequelize } = require('../database');
+const { DataTypes, Sequelize } = require('sequelize');
 
 // Import all models
 const User = require('./User');
@@ -13,6 +14,8 @@ const db = {};
 db.User = User;
 db.Score = Score;
 db.Reward = Reward;
+
+db.User_Momis = require('./User')(user_db_sequelize, DataTypes);
 
 // Define associations between models
 
@@ -75,7 +78,7 @@ db.User.belongsTo(db.User, {
 // Add the sequelize instance to the db object
 db.sequelize = sequelize;
 // Add Sequelize library itself if needed elsewhere (optional)
-// db.Sequelize = Sequelize;
+db.Sequelize = Sequelize;
 
 // Export the db object
 module.exports = db;
