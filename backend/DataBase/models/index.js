@@ -1,49 +1,48 @@
-// Import the sequelize instance
+'use strict';
+
 const { sequelize, user_db_sequelize } = require('../database');
 const { DataTypes, Sequelize } = require('sequelize');
-
-// Import all models
-const User = require('./User');
-const Score = require('./Score');
-const Reward = require('./Reward');
 
 // Create an object to hold our models and sequelize instance
 const db = {};
 
-// Add models to the db object
-db.User = User;
-db.Score = Score;
-db.Reward = Reward;
+// Import and instantiate models with their correct Sequelize instance
+// Models for the main database (colormemory_db)
+db.User = require('./User')(sequelize, DataTypes);
+db.Score = require('./Score')(sequelize, DataTypes);
+db.Reward = require('./Reward')(sequelize, DataTypes);
 
+// Model for the separate user-centric database (momis_users)
+// Note: This User model is distinct from the one in the main database
 db.User_Momis = require('./User')(user_db_sequelize, DataTypes);
 
 // Define associations between models
-
+// These associations are all within the 'main' database (colormemory_db)
 // User <-> Score: A User can have many Scores; A Score belongs to one User.
 db.User.hasMany(db.Score, {
     foreignKey: {
-        name: 'userTelegramId', // Foreign key in the Scores table
+        name: 'userTelegramId',
         allowNull: false
     },
-    sourceKey: 'telegramId',      // The User.telegramId is the source key for this association
-    as: 'Scores'                  // Alias for easy access (e.g., user.getScores(), user.addScore())
+    sourceKey: 'telegramId',
+    as: 'Scores'
 });
 db.Score.belongsTo(db.User, {
     foreignKey: {
         name: 'userTelegramId',
         allowNull: false
     },
-    targetKey: 'telegramId'       // The Score.userTelegramId targets User.telegramId
+    targetKey: 'telegramId'
 });
 
 // User <-> Reward: A User can have many Rewards; A Reward belongs to one User.
 db.User.hasMany(db.Reward, {
     foreignKey: {
-        name: 'userTelegramId', // Foreign key in the Rewards table
+        name: 'userTelegramId',
         allowNull: false
     },
     sourceKey: 'telegramId',
-    as: 'Rewards'                 // Alias for easy access (e.g., user.getRewards(), user.addReward())
+    as: 'Rewards'
 });
 db.Reward.belongsTo(db.User, {
     foreignKey: {
@@ -53,31 +52,33 @@ db.Reward.belongsTo(db.User, {
     targetKey: 'telegramId'
 });
 
-// --- ارتباطات جدید برای سیستم ارجاع ---
-// یک کاربر می‌تواند چندین کاربر دیگر را ارجاع دهد (ReferredUsers)
+// --- New Associations for Referral System ---
+// A user can refer many other users (ReferredUsers)
 db.User.hasMany(db.User, {
     foreignKey: {
-        name: 'referrerTelegramId', // این کلید خارجی در خود جدول 'users' است
-        allowNull: true             // یک کاربر لزوماً ارجاع‌دهنده ندارد
+        name: 'referrerTelegramId',
+        allowNull: true
     },
-    as: 'ReferredUsers', // نام مستعار برای دریافت کاربرانی که توسط این کاربر ارجاع شده‌اند (مثلاً user.getReferredUsers())
-    sourceKey: 'telegramId' // telegramId ارجاع‌دهنده مبدأ است
+    as: 'ReferredUsers',
+    sourceKey: 'telegramId'
 });
 
-// یک کاربر به یک ارجاع‌دهنده تعلق دارد
+// A user belongs to one referrer
 db.User.belongsTo(db.User, {
     foreignKey: {
         name: 'referrerTelegramId',
         allowNull: true
     },
-    as: 'Referrer', // نام مستعار برای دریافت کاربری که این کاربر را ارجاع داده است (مثلاً user.getReferrer())
-    targetKey: 'telegramId' // telegramId ارجاع‌دهنده مقصد است
+    as: 'Referrer',
+    targetKey: 'telegramId'
 });
-// --- پایان ارتباطات جدید ---
+// --- End of new associations ---
 
-// Add the sequelize instance to the db object
+// Add the sequelize instances to the db object
 db.sequelize = sequelize;
-// Add Sequelize library itself if needed elsewhere (optional)
+db.user_db_sequelize = user_db_sequelize;
+
+// Add Sequelize library itself if needed elsewhere
 db.Sequelize = Sequelize;
 
 // Export the db object
