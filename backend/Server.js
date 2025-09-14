@@ -618,8 +618,8 @@ app.get("/api/referral-leaderboard", async (req, res) => {
                 u.firstName AS firstName,
                 u.username AS username,
                 COUNT(DISTINCT u2.telegramId) AS referral_count
-            FROM momis_users.Users u2
-            INNER JOIN momis_users.Users u ON u2.referrerTelegramId = u.telegramId
+            FROM momis_users.users u2
+            INNER JOIN momis_users.users u ON u2.referrerTelegramId = u.telegramId
             WHERE
                 u2.referrerTelegramId IS NOT NULL
                 AND (
