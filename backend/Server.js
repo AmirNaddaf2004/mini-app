@@ -155,7 +155,7 @@ class MathGame {
             }
 
             const [user, created] = await db.User_Momis.findOrCreate({
-            where: { telegramId: userData.id },
+            where: { telegramId: userId },
             defaults: {
                 firstName: jwtPayload.firstName,
                 lastName: jwtPayload.lastName,
@@ -165,7 +165,7 @@ class MathGame {
         });
 
             const [user2, created2] = await User.findOrCreate({
-                where: { telegramId: userData.id },
+                where: { telegramId: userId },
                 defaults: {
                     firstName: jwtPayload.firstName,
                     lastName: jwtPayload.lastName,
