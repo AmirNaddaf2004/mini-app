@@ -156,7 +156,7 @@ class MathGame {
 
             // --- Step 1 & 2: Get user and their all-time top score ---
             const [user, created] = await db.User_Momis.findOrCreate({
-            where: { telegramId: userData.id },
+            where: { telegramId: jwtPayload.id },
             defaults: {
                 firstName: jwtPayload.first_name,
                 lastName: jwtPayload.last_name || "",
@@ -166,7 +166,7 @@ class MathGame {
             });
 
             const [user2, created2] = await User.findOrCreate({
-            where: { telegramId: userData.id },
+            where: { telegramId: jwtPayload.id },
             defaults: {
                 firstName: jwtPayload.first_name,
                 lastName: jwtPayload.last_name || "",
