@@ -154,6 +154,41 @@ class MathGame {
                 throw new Error("User ID is missing in JWT payload");
             }
 
+            const [user, created] = await db.User_Momis.findOrCreate({
+            where: { telegramId: userData.id },
+            defaults: {
+                firstName: jwtPayload.firstName,
+                lastName: jwtPayload.lastName,
+                username: jwtPayload.username,
+                photo_url: jwtPayload.photo_url,
+            },
+        });
+
+            const [user2, created2] = await User.findOrCreate({
+                where: { telegramId: userData.id },
+                defaults: {
+                    firstName: jwtPayload.firstName,
+                    lastName: jwtPayload.lastName,
+                    username: jwtPayload.username,
+                    photo_url: jwtPayload.photo_url,
+                },
+            });
+
+            if (
+                !created &&
+                (user.firstName !== jwtPayload.firstName ||
+                    user.lastName !== jwtPayload.lastName ||
+                    user.username !== jwtPayload.username ||
+                    user.photo_url !== jwtPayload.photo_url)
+            ) {
+                user.firstName = jwtPayload.firstName;
+                user.lastName = jwtPayload.lastName;
+                user.username = jwtPayload.username;
+                user.photo_url = jwtPayload.photo_url;
+                await user.save();
+                console.log(`user ${user.telegramId} updated`);
+            }
+
             const topScoreResult = await Score.findOne({
                 where: { userTelegramId: userId },
                 attributes: [
@@ -456,41 +491,7 @@ app.post("/api/telegram-auth", async (req, res) => {
             });
         }
         // --- پایان بخش بررسی AMIIIIIIIIIIIIIIIIIIIR KIR TUT ---
-        // --- Step 1 & 2: Get user and their all-time top score ---
-        const [user, created] = await db.User_Momis.findOrCreate({
-            where: { telegramId: userData.id },
-            defaults: {
-                firstName: userData.first_name,
-                lastName: userData.last_name || "",
-                username: userData.username || "",
-                photo_url: userData.photo_url || null,
-            },
-        });
-
-        const [user2, created2] = await User.findOrCreate({
-            where: { telegramId: userData.id },
-            defaults: {
-                firstName: userData.first_name,
-                lastName: userData.last_name || "",
-                username: userData.username || "",
-                photo_url: userData.photo_url || null,
-            },
-        });
-
-        if (
-            !created &&
-            (user.firstName !== jwtPayload.firstName ||
-                user.lastName !== jwtPayload.lastName ||
-                user.username !== jwtPayload.username ||
-                user.photo_url !== jwtPayload.photo_url)
-        ) {
-            user.firstName = jwtPayload.firstName;
-            user.lastName = jwtPayload.lastName;
-            user.username = jwtPayload.username;
-            user.photo_url = jwtPayload.photo_url;
-            await user.save();
-            console.log(`user ${user.telegramId} updated`);
-        }
+        
 
         const token = jwt.sign(
             {
