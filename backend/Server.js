@@ -386,7 +386,7 @@ async function getActiveReferredFriendsCount(currentUserId) {
             SELECT
                 COUNT(DISTINCT u.telegramId) AS invited_num
             FROM
-                momis_users.users AS u
+                momis_users.Users AS u
             WHERE
                 u.referrerTelegramId = :currentUserId
                 AND (
