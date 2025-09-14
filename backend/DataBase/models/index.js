@@ -6,9 +6,9 @@ const { DataTypes, Sequelize } = require('sequelize');
 const db = {};
 
 // Load models for the main database
-db.User = require('./User')(sequelize, DataTypes);
-db.Score = require('./Score')(sequelize, DataTypes);
-db.Reward = require('./Reward')(sequelize, DataTypes);
+db.user = require('./User')(sequelize, DataTypes);
+db.score = require('./Score')(sequelize, DataTypes);
+db.reward = require('./Reward')(sequelize, DataTypes);
 
 // Load models for the user-centric database (momis_users)
 // This model will use the separate user_db_sequelize instance
