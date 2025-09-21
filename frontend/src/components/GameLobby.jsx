@@ -214,21 +214,23 @@ const GameLobby = ({
                                         key={event.id}
                                         className="bg-black/20 rounded-xl p-5 my-4 border border-slate-700 transition-all transform hover:scale-[1.02] hover:border-green-500 hover:shadow-lg hover:shadow-green-500/30 relative"
                                     >
-                                        {time && (
-                                            <div className="absolute top-2 left-2 text-xs text-slate-400 font-mono">
-                                                {time.isEnded ? (
-                                                    <span>Event Ended 🏁</span>
-                                                ) : (
-                                                    <span>
-                                                        {time.days > 0 && `${time.days}d `}
-                                                        {time.hours}h {time.minutes}m {time.seconds}s left
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                        <h2 className="text-xl font-bold text-green-400 mt-6">
-                                            {event.name}
-                                        </h2>
+                                        <div className="flex justify-between items-start">
+                                            <h2 className="text-xl font-bold text-green-400">
+                                                {event.name}
+                                            </h2>
+                                            {time && (
+                                                <div className="text-xs text-slate-400 font-mono text-right">
+                                                    {time.isEnded ? (
+                                                        <span className="whitespace-nowrap">Event Ended 🏁</span>
+                                                    ) : (
+                                                        <span className="whitespace-nowrap">
+                                                            {time.days > 0 && `${time.days}d `}
+                                                            {time.hours}h {time.minutes}m {time.seconds}s left
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         <p className="text-sm text-slate-300 mt-1 mb-4">
                                             {event.description}
                                         </p>
