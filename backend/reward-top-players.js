@@ -1,6 +1,4 @@
 // backend/reward-top-players.js
-
-
 'use strict';
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
@@ -16,7 +14,6 @@ const bot = new TelegramBot(process.env.BOT_TOKEN);
 // توابع ارسال پیام به جای ایمپورت از یک فایل دیگر، در همین فایل تعریف می‌شوند
 // تا از نمونه بات محلی (bot) استفاده کنند.
 async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
-    return;
     const message = `🏆 *Congratulations, ${userName}!* 🏆\n\nYou were a top player in the last tournament!\n\n*Your final score:* *${score}*\n\nYou have earned a special reward. Click the button below to claim your prize.`;
     const options = {
         parse_mode: 'Markdown',
@@ -33,7 +30,6 @@ async function sendWinnerMessage(telegramId, userName, score, rewardLink) {
 }
 
 async function sendConsolationMessage(telegramId, userName, topScore) {
-    return;
     const message = `👋 Hello, *${userName}*!\n\nThank you for participating in our latest tournament.\n\n*Your highest score:* *${topScore}*\n\nThe tournament has now ended. Keep practicing for the next event!`;
     const options = {
         parse_mode: 'Markdown',
@@ -134,7 +130,7 @@ async function findAndRewardTopPlayers(eventId) {
 // Allow script to be run from the command line
 if (require.main === module) {
     const eventIdFromArgs = process.argv[2];
-    logger.info(process.env.BOT_TOKEN);
+    logger.info(`Using BOT_TOKEN from .env file: ${process.env.BOT_TOKEN ? 'Loaded' : 'Not Loaded'}`);
     if (!eventIdFromArgs) {
         console.log("Usage: node reward-top-players.js <event-id>");
         process.exit(1);
