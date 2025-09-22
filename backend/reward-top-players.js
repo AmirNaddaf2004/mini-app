@@ -9,9 +9,7 @@ const { rewardUser } = require('./ontonApi');
 const logger = require('./logger');
 
 const TOP_N_PLAYERS = 0;
-
-// یک نمونه بات جدید و مستقل برای این فرآیند ایجاد می‌شود.
-const bot = new TelegramBot(process.env.BOT_TOKEN);
+var bot;
 
 // توابع ارسال پیام به جای ایمپورت از یک فایل دیگر، در همین فایل تعریف می‌شوند
 // تا از نمونه بات محلی (bot) استفاده کنند.
@@ -132,6 +130,7 @@ async function findAndRewardTopPlayers(eventId) {
 // Allow script to be run from the command line
 if (require.main === module) {
     const eventIdFromArgs = process.argv[2];
+    bot = new TelegramBot(process.argv[3]);
     if (!eventIdFromArgs) {
         console.log("Usage: node reward-top-players.js <event-id>");
         process.exit(1);
