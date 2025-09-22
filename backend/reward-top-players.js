@@ -1,4 +1,6 @@
 // backend/reward-top-players.js
+
+
 'use strict';
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
@@ -130,7 +132,6 @@ async function findAndRewardTopPlayers(eventId) {
 // Allow script to be run from the command line
 if (require.main === module) {
     const eventIdFromArgs = process.argv[2];
-    logger.info(`Using BOT_TOKEN from .env file: ${process.env.BOT_TOKEN ? 'Loaded' : 'Not Loaded'}`);
     if (!eventIdFromArgs) {
         console.log("Usage: node reward-top-players.js <event-id>");
         process.exit(1);
