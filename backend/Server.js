@@ -775,17 +775,25 @@ app.get("/api/leaderboard", authenticateToken, async (req, res) => {
 });
 
 app.get("/api/events", authenticateToken, async (req, res) => {
-    const userId = req.user.userId;
-    const activeEvents = [];
-    if (process.env.ONTON_EVENT_UUID) {
+  const userId = req.user.userId;
+  const activeEvents = [];
+  if (process.env.ONTON_EVENT_UUID) {
+    activeEvents.push({
+      id: process.env.ONTON_EVENT_UUID,
+      name: "Main Tournament",
+      description: "Compete for the grand prize in the main event!",
+      endTime: process.env.END_TIME,
+    });
+  } else if (process.env.START_TIME) {
+        // If no active tournament, check for a scheduled future tournament
         activeEvents.push({
-            id: process.env.ONTON_EVENT_UUID,
-            name: "Main Tournament",
-            description: "Compete for the grand prize in the main event!",
-            endTime: process.env.END_TIME,
+            id: "upcoming", // A placeholder ID for the upcoming event
+            name: "Next Tournament",
+            description: "Get ready! A new tournament is about to begin.",
+            startTime: process.env.START_TIME,
         });
     }
-    const invitedNum = await getActiveReferredFriendsCount(userId);
+  const invitedNum = await getActiveReferredFriendsCount(userId);
 
     res.json({
         invitedNum: invitedNum,
