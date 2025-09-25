@@ -272,6 +272,12 @@ class MathGame {
             // ▼▼▼ THIS IS THE CRITICAL FIX - PART 1 ▼▼▼
             // Save the score to the database when the timeout happens.
             if (player.score > 0) {
+                if (player.currentEventId && (!process.env.ONTON_EVENT_UUID || process.env.ONTON_EVENT_UUID !== player.currentEventId))
+                {
+                    logger.info(`[TOURNAMENT ENDED]: skip saving score for: ${userId}`);
+                    return "tournament ended";
+                }
+
                 await Score.create({
                     score: player.score,
                     userTelegramId: userId,
@@ -344,6 +350,15 @@ class MathGame {
                 player.game_active = false;
 
                 if (player.score > 0) {
+                    if (player.currentEventId && (!process.env.ONTON_EVENT_UUID || process.env.ONTON_EVENT_UUID !== player.currentEventId))
+                    {
+                        logger.info(`[TOURNAMENT ENDED]: skip saving score for: ${userId}`);
+                        return res.status(400).json({
+                            status: "tournament_ended",
+                            message:
+                                "Tournament is ended. Your new score is ignored",
+                        });
+                    }
                     await Score.create({
                         score: player.score,
                         userTelegramId: userId,
@@ -594,8 +609,14 @@ app.post("/api/timeOut", authenticateToken, async (req, res) => {
     try {
         const user = req.user; // اطلاعات کاربر از توکن
         const result = await gameInstance.timeHandler(user.userId);
-
-        res.json(result);
+        if (result === "tournament ended")
+            return res.status(400).json({
+                status: "tournament_ended",
+                message:
+                    "Tournament is ended. Your new score is ignored",
+            });
+        else
+            res.json(result);
     } catch (e) {
         logger.error(`API answer error: ${e.message}`, {
             stack: e.stack,
